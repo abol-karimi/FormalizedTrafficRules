@@ -7,7 +7,7 @@
 
 #include "Components/BoxComponent.h"
 #include "Components/ArrowComponent.h"
-#include "Components/SplineComponent.h"
+#include "ForkBranch.h"
 
 #include "Fork.generated.h"
 
@@ -24,9 +24,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-#if WITH_EDITOR
+//#if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent) override;
-#endif // WITH_EDITOR
+//#endif // WITH_EDITOR
 
 public:	
 	// Called every frame
@@ -39,8 +39,5 @@ public:
 	UArrowComponent* ForwardArrow;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Fork Lanes", EditAnywhere)
-	TArray<USplineComponent *> Lanes;
-
-	UPROPERTY(VisibleAnywhere, Category = "Fork Lanes", EditFixedSize)
-	TArray<UBoxComponent *> Exits;
+	TArray<UForkBranch *> Lanes;
 };

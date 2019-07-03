@@ -3,6 +3,7 @@
 
 #include "Fork.h"
 
+
 #include "Engine/CollisionProfile.h"
 
 // Sets default values
@@ -41,30 +42,21 @@ void AFork::Tick(float DeltaTime)
 
 }
 
-#if WITH_EDITOR
+//#if WITH_EDITOR
 void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	UE_LOG(LogTemp, Warning, TEXT("Change Type: %d"), PropertyChangedEvent.ChangeType);
-	if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd)
+	if (PropertyChangedEvent.Property && PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd)
 	{
 		const auto NewIndex = Lanes.Num() - 1;
-		Lanes[NewIndex] = NewObject<USplineComponent>(this);
+		UE_LOG(LogTemp, Warning, TEXT("NewIndex: %d"), NewIndex);
+		Lanes[NewIndex] = NewObject<UForkBranch>(this);
 		Lanes[NewIndex]->SetupAttachment(RootComponent);
 		Lanes[NewIndex]->SetHiddenInGame(true);
 		Lanes[NewIndex]->SetMobility(EComponentMobility::Static);
 		Lanes[NewIndex]->RegisterComponent();
-
-		Exits.Add(NewObject<UBoxComponent>(this));
-		Exits[NewIndex]->SetupAttachment(RootComponent);
-		Exits[NewIndex]->SetHiddenInGame(true);
-		Exits[NewIndex]->SetMobility(EComponentMobility::Static);
-		Exits[NewIndex]->SetCollisionProfileName(FName("OverlapAll"));
-		Exits[NewIndex]->SetGenerateOverlapEvents(true);
-		Exits[NewIndex]->SetBoxExtent(FVector{ 40.0f, 100.0f, 50.0f });
-		Exits[NewIndex]->RegisterComponent();
-		Exits[NewIndex]->SetRelativeLocation(FVector{ 100.f, .0f, .0f });
 	}
 
 	//const auto Size = Lanes.Num();
@@ -79,16 +71,6 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 	//			Lanes[i]->SetHiddenInGame(true);
 	//			Lanes[i]->SetMobility(EComponentMobility::Static);
 	//			Lanes[i]->RegisterComponent();
-
-	//			//// TODO increase the size of Exits
-	//			//Exits[i] = NewObject<UBoxComponent>(this);
-	//			//Exits[i]->SetupAttachment(RootComponent);
-	//			//Exits[i]->SetHiddenInGame(true);
-	//			//Exits[i]->SetMobility(EComponentMobility::Static);
-	//			//Exits[i]->SetCollisionProfileName(FName("OverlapAll"));
-	//			//Exits[i]->SetGenerateOverlapEvents(true);
-	//			//Exits[i]->SetBoxExtent(FVector{ 40.0f, 100.0f, 50.0f });
-	//			//Exits[i]->RegisterComponent();
 	//		}
 	//	}
 	//	UE_LOG(LogTemp, Warning, TEXT("Property changed: %s"), *(PropertyChangedEvent.Property->GetFName().ToString()));
@@ -96,4 +78,6 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 	//}
 
 }
-#endif // WITH_EDITOR
+
+
+//#endif // WITH_EDITOR
