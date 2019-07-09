@@ -4,23 +4,21 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Components/BoxComponent.h"
-#include "Components/ArrowComponent.h"
+#include "Runtime/Engine/Classes/Components/StaticMeshComponent.h"
+#include "Runtime/Engine/Classes/Components/BillboardComponent.h"
 
-// Developer
-#include "IntersectionExit.h"
-#include "ForkBranch.h"
+#include "IntersectionEntrance.h"
 
-#include "Fork.generated.h"
+#include "IntersectionMonitor.generated.h"
 
 UCLASS()
-class TRAFFICMONITOR_API AFork : public AActor
+class TRAFFICMONITOR_API AIntersectionMonitor : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AFork(const FObjectInitializer &ObjectInitializer);
+	AIntersectionMonitor(const FObjectInitializer &ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned
@@ -31,18 +29,10 @@ protected:
 #endif // WITH_EDITOR
 
 public:
-	void AddBranch(int32 index);
+	UPROPERTY()
+	UBillboardComponent* Billboard;
 
-public:	
-	UPROPERTY(EditAnywhere)
-	UBoxComponent* EntranceTriggerVolume;
+	UPROPERTY(Category = "Entrances", EditAnywhere)
+	TArray<AIntersectionEntrance*> Entrances;
 
-	UPROPERTY(EditAnywhere)
-	UArrowComponent* ForwardArrow;
-
-	UPROPERTY(EditAnywhere)
-	TArray<AIntersectionExit*> Exits;
-
-	UPROPERTY(VisibleAnywhere)
-	TArray<UForkBranch*> Branches;
 };

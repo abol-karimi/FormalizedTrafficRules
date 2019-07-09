@@ -2,47 +2,33 @@
 
 #pragma once
 
+// UE4 Built-in
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
 #include "Components/ArrowComponent.h"
 
-// Developer
-#include "IntersectionExit.h"
-#include "ForkBranch.h"
-
-#include "Fork.generated.h"
+// Automatically generated
+#include "IntersectionEntrance.generated.h"
 
 UCLASS()
-class TRAFFICMONITOR_API AFork : public AActor
+class TRAFFICMONITOR_API AIntersectionEntrance : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AFork(const FObjectInitializer &ObjectInitializer);
+	AIntersectionEntrance(const FObjectInitializer &ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-#if WITH_EDITOR
-	virtual void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent) override;
-#endif // WITH_EDITOR
-
-public:
-	void AddBranch(int32 index);
-
 public:	
 	UPROPERTY(EditAnywhere)
-	UBoxComponent* EntranceTriggerVolume;
+	UBoxComponent* TriggerVolume;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	UArrowComponent* ForwardArrow;
 
-	UPROPERTY(EditAnywhere)
-	TArray<AIntersectionExit*> Exits;
-
-	UPROPERTY(VisibleAnywhere)
-	TArray<UForkBranch*> Branches;
 };

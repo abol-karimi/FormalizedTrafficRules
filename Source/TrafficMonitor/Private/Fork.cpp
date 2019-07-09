@@ -14,13 +14,13 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 		ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this, TEXT("SceneRootComponent"));
 	RootComponent->SetMobility(EComponentMobility::Static);
 
-	ArrivalTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerVolume"));
-	ArrivalTriggerVolume->SetupAttachment(RootComponent);
-	ArrivalTriggerVolume->SetHiddenInGame(true);
-	ArrivalTriggerVolume->SetMobility(EComponentMobility::Static);
-	ArrivalTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
-	ArrivalTriggerVolume->SetGenerateOverlapEvents(true);
-	ArrivalTriggerVolume->SetBoxExtent(FVector{ 40.0f, 100.0f, 50.0f });
+	EntranceTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerVolume"));
+	EntranceTriggerVolume->SetupAttachment(RootComponent);
+	EntranceTriggerVolume->SetHiddenInGame(true);
+	EntranceTriggerVolume->SetMobility(EComponentMobility::Static);
+	EntranceTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
+	EntranceTriggerVolume->SetGenerateOverlapEvents(true);
+	EntranceTriggerVolume->SetBoxExtent(FVector{ 40.0f, 100.0f, 50.0f });
 
 	ForwardArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("ForwardArrow"));
 	ForwardArrow->SetupAttachment(RootComponent);
@@ -35,49 +35,69 @@ void AFork::BeginPlay()
 	
 }
 
-// Called every frame
-void AFork::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 
-}
-
-//#if WITH_EDITOR
+#if WITH_EDITOR
 void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
 	UE_LOG(LogTemp, Warning, TEXT("Change Type: %d"), PropertyChangedEvent.ChangeType);
-	if (PropertyChangedEvent.Property && PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd)
+	if (!PropertyChangedEvent.Property)
 	{
-		const auto NewIndex = Lanes.Num() - 1;
-		UE_LOG(LogTemp, Warning, TEXT("NewIndex: %d"), NewIndex);
-		Lanes[NewIndex] = NewObject<UForkBranch>(this);
-		Lanes[NewIndex]->SetupAttachment(RootComponent);
-		Lanes[NewIndex]->SetHiddenInGame(true);
-		Lanes[NewIndex]->SetMobility(EComponentMobility::Static);
-		Lanes[NewIndex]->RegisterComponent();
+		UE_LOG(LogTemp, Warning, TEXT("PropertyChangedEvent.Property is null!"));
+		return;
+	}
+	else if (PropertyChangedEvent.GetPropertyName() != FName("Exits"))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("A property other than Exits changed!"));
+		return;
 	}
 
-	//const auto Size = Lanes.Num();
-	//if (PropertyChangedEvent.Property)
-	//{
-	//	for (auto i = 0; i < Size; ++i)
-	//	{
-	//		if (Lanes[i] == nullptr)
-	//		{
-	//			Lanes[i] = NewObject<USplineComponent>(this);
-	//			Lanes[i]->SetupAttachment(RootComponent);
-	//			Lanes[i]->SetHiddenInGame(true);
-	//			Lanes[i]->SetMobility(EComponentMobility::Static);
-	//			Lanes[i]->RegisterComponent();
-	//		}
-	//	}
-	//	UE_LOG(LogTemp, Warning, TEXT("Property changed: %s"), *(PropertyChangedEvent.Property->GetFName().ToString()));
-	//	UE_LOG(LogTemp, Warning, TEXT("ArrayIndex: %d"), PropertyChangedEvent.GetArrayIndex(PropertyChangedEvent.Property->GetFName().ToString()));
-	//}
+	// The index at which the array Exits is modified
+	const auto index = PropertyChangedEvent.GetArrayIndex(FString("Exits"));
+	UE_LOG(LogTemp, Warning, TEXT("PropertyChangedEvent.GetArrayIndex(): %d"), index);
+
+	if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ValueSet)
+	{
+		AddBranch(index);
+	}
+	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayRemove)
+	{
+		// Destroy the corresponding fork branch
+
+		// Remove the index from the array Branches
+		Branches.RemoveAt(index);
+	}
+	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd)
+	{
+		// Increment the size of the array Branches
+		Branches.Add(nullptr);
+	}
+}
+#endif // WITH_EDITOR
+
+
+void AFork::AddBranch(int32 index)
+{
+	// destroy the fork branch Lanes[index]
+	// How?
+
+	if (Exits[index] != nullptr)
+		// instantiate the corresponding lane into Lanes[index]
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Exits[%d] is set to %s"), index, *(Exits[index]->GetName()));
+		Branches[index] = NewObject<UForkBranch>(this);
+		Branches[index]->SetupAttachment(RootComponent);
+		Branches[index]->SetHiddenInGame(true);
+		Branches[index]->SetMobility(EComponentMobility::Static);
+		Branches[index]->RegisterComponent();
+		
+		// setup the spline points (assuming two points on the spline)
+		Branches[index]->SetLocationAtSplinePoint(0, GetActorLocation(), ESplineCoordinateSpace::World);
+		Branches[index]->SetTangentAtSplinePoint(0, GetActorForwardVector()*1000.f, ESplineCoordinateSpace::World);
+		Branches[index]->SetLocationAtSplinePoint(1, Exits[index]->GetActorLocation(), ESplineCoordinateSpace::World);
+		Branches[index]->SetTangentAtSplinePoint(1, Exits[index]->GetActorForwardVector()*1000.f, ESplineCoordinateSpace::World);
+
+	}
 
 }
-
-
-//#endif // WITH_EDITOR
