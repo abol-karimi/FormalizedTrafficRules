@@ -32,6 +32,7 @@ protected:
 
 public:
 	void AddBranch(int32 index);
+	void RemoveBranch(int32 index);
 
 public:	
 	UPROPERTY(EditAnywhere)

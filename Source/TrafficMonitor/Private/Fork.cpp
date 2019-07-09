@@ -26,6 +26,7 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 	ForwardArrow->SetupAttachment(RootComponent);
 	ForwardArrow->SetHiddenInGame(true);
 	ForwardArrow->SetMobility(EComponentMobility::Static);
+	ForwardArrow->SetWorldScale3D(FVector{ 2.f, 2.f, 2.f });
 }
 
 // Called when the game starts or when spawned
@@ -59,19 +60,34 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 
 	if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ValueSet)
 	{
-		AddBranch(index);
+		if (Exits[index] == nullptr)
+		{
+			RemoveBranch(index); // Does nothing if Branches[index] == nullptr
+		}
+		else if (index == Exits.Find(Exits[index]) && index == Exits.FindLast(Exits[index]))
+		{
+			AddBranch(index); // Exits[index] is valid and unique in Exits
+		}
+		else // Exit and its branch already exists
+		{			
+			Exits[index] = nullptr; // Avoid duplicate Exit pointers
+			RemoveBranch(index);
+		}
 	}
 	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayRemove)
 	{
 		// Destroy the corresponding fork branch
-
-		// Remove the index from the array Branches
+		RemoveBranch(index);
 		Branches.RemoveAt(index);
 	}
-	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd)
+	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd) // Size of Exits incremented
 	{
-		// Increment the size of the array Branches
+		// Increment the size of Branches
 		Branches.Add(nullptr);
+	}
+	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::Duplicate)
+	{
+		Exits.RemoveAt(index);
 	}
 }
 #endif // WITH_EDITOR
@@ -79,25 +95,25 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 
 void AFork::AddBranch(int32 index)
 {
-	// destroy the fork branch Lanes[index]
-	// How?
-
-	if (Exits[index] != nullptr)
-		// instantiate the corresponding lane into Lanes[index]
+	if (Exits[index] == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Exits[%d] is set to %s"), index, *(Exits[index]->GetName()));
-		Branches[index] = NewObject<UForkBranch>(this);
-		Branches[index]->SetupAttachment(RootComponent);
-		Branches[index]->SetHiddenInGame(true);
-		Branches[index]->SetMobility(EComponentMobility::Static);
-		Branches[index]->RegisterComponent();
-		
-		// setup the spline points (assuming two points on the spline)
-		Branches[index]->SetLocationAtSplinePoint(0, GetActorLocation(), ESplineCoordinateSpace::World);
-		Branches[index]->SetTangentAtSplinePoint(0, GetActorForwardVector()*1000.f, ESplineCoordinateSpace::World);
-		Branches[index]->SetLocationAtSplinePoint(1, Exits[index]->GetActorLocation(), ESplineCoordinateSpace::World);
-		Branches[index]->SetTangentAtSplinePoint(1, Exits[index]->GetActorForwardVector()*1000.f, ESplineCoordinateSpace::World);
-
+		UE_LOG(LogTemp, Warning, TEXT("Attempted to add branch for a null exit!"));
+		return;
 	}
+	UE_LOG(LogTemp, Warning, TEXT("Exits[%d] is set to %s"), index, *(Exits[index]->GetName()));
+	Branches[index] = NewObject<UForkBranch>(this); // "this" is the owner of the new component
+	Branches[index]->Init(RootComponent,
+		GetActorLocation(),
+		GetActorForwardVector(),
+		Exits[index]->GetActorLocation(),
+		Exits[index]->GetActorForwardVector());
+}
 
+void AFork::RemoveBranch(int32 index)
+{
+	if (Branches[index] != nullptr)
+	{
+		Branches[index]->DestroyComponent();
+		Branches[index] = nullptr;
+	}
 }

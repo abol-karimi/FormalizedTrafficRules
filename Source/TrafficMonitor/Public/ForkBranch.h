@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Components/SplineComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/SplineMeshComponent.h"
 
 #include "ForkBranch.generated.h"
 
@@ -37,7 +38,14 @@ public:
 		int32 OtherBodyIndex, 
 		bool bFromSweep, 
 		const FHitResult& SweepResult);
-//public:
-//	UPROPERTY(EditAnywhere)
-//	UBoxComponent* ExitTriggerVolume;
+public:
+	void Init(USceneComponent* RootComponent,
+		FVector EntranceLocation,
+		FVector EntranceDirection,
+		FVector ExitLocation,
+		FVector ExitDirection);
+
+public:
+	UPROPERTY()
+	TArray<USplineMeshComponent*> SplineMeshComponents;
 };

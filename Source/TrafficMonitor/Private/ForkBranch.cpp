@@ -7,17 +7,30 @@
 UForkBranch::UForkBranch()
 {
 	UE_LOG(LogTemp, Warning, TEXT("ForkBranch constructor is called!"));
-
-	//ExitTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("ExitTriggerVolume"));
-	//ExitTriggerVolume->SetupAttachment(this);
-	//ExitTriggerVolume->SetHiddenInGame(true);
-	//ExitTriggerVolume->SetMobility(EComponentMobility::Static);
-	//ExitTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
-	//ExitTriggerVolume->SetGenerateOverlapEvents(true);
-	//ExitTriggerVolume->SetBoxExtent(FVector{ 20.0f, 200.0f, 50.0f });
-	//ExitTriggerVolume->SetRelativeLocation(FVector{ 200.f, 0.f, 0.f });
-	//ExitTriggerVolume->RegisterComponent();
 }
+
+
+void UForkBranch::Init(USceneComponent* RootComponent,
+	FVector EntranceLocation,
+	FVector EntranceDirection,
+	FVector ExitLocation,
+	FVector ExitDirection)
+{
+	SetupAttachment(RootComponent);
+	SetHiddenInGame(true);
+	SetMobility(EComponentMobility::Static);
+	RegisterComponent();
+
+	// setup the spline points (assuming two points on the spline)
+	SetLocationAtSplinePoint(0, EntranceLocation, ESplineCoordinateSpace::World);
+	SetTangentAtSplinePoint(0, EntranceDirection*1000.f, ESplineCoordinateSpace::World);
+	SetLocationAtSplinePoint(1, ExitLocation, ESplineCoordinateSpace::World);
+	SetTangentAtSplinePoint(1, ExitDirection*1000.f, ESplineCoordinateSpace::World);
+
+	// setup the SplineMeshComponents
+
+}
+
 
 #if WITH_EDITOR
 void UForkBranch::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
@@ -27,11 +40,6 @@ void UForkBranch::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedE
 	UE_LOG(LogTemp, Warning, TEXT("PostEditChangeProperty called inside ForkBranch!"));
 	UE_LOG(LogTemp, Warning, TEXT("Change Type: %d \n"), PropertyChangedEvent.ChangeType);
 
-	//auto LastIndex = GetNumberOfSplinePoints() - 1;
-	//auto EndPointLocation = GetLocationAtSplinePoint(LastIndex, ESplineCoordinateSpace::Local);
-	//ExitTriggerVolume->SetRelativeLocation(EndPointLocation);
-	//auto EndPointRotation = GetRotationAtSplinePoint(LastIndex, ESplineCoordinateSpace::Local);
-	//ExitTriggerVolume->SetRelativeRotation(EndPointRotation);
 }
 #endif // WITH_EDITOR
 
