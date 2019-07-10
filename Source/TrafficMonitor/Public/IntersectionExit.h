@@ -22,7 +22,13 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-
+public:
+	UFUNCTION()
+		void OnExit(
+			UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex);
 public:
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* TriggerVolume;

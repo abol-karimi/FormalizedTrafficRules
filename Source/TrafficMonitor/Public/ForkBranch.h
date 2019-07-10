@@ -30,8 +30,10 @@ protected:
 
 
 public:
+	virtual void DestroyComponent(bool bPromoteChildren) override;
+
 	UFUNCTION()
-	void OnExitFromLane(
+	void OnBranchBeginOverlap(
 		UPrimitiveComponent* OverlappedComp,
 		AActor* OtherActor, 
 		UPrimitiveComponent* OtherComp, 
@@ -48,4 +50,7 @@ public:
 public:
 	UPROPERTY()
 	TArray<USplineMeshComponent*> SplineMeshComponents;
+
+	UPROPERTY(EditAnywhere)
+	UStaticMesh* Mesh;
 };

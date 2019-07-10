@@ -25,6 +25,7 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+//	virtual void OnConstruction(const FTransform &Transform) override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent) override;
@@ -34,6 +35,14 @@ public:
 	void AddBranch(int32 index);
 	void RemoveBranch(int32 index);
 
+	UFUNCTION()
+		void OnEntrance(
+			UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult& SweepResult);
 public:	
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* EntranceTriggerVolume;

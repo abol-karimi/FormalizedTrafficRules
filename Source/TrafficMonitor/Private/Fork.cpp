@@ -33,7 +33,10 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 void AFork::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	EntranceTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
+	EntranceTriggerVolume->SetGenerateOverlapEvents(true);
+	EntranceTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AFork::OnEntrance);
 }
 
 
@@ -65,12 +68,15 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 			RemoveBranch(index); // Does nothing if Branches[index] == nullptr
 		}
 		else if (index == Exits.Find(Exits[index]) && index == Exits.FindLast(Exits[index]))
-		{
-			AddBranch(index); // Exits[index] is valid and unique in Exits
+		{ // Exits[index] is valid and unique in Exits
+			// Remove previously associated branch, if any
+			RemoveBranch(index); 
+			// Associate a new branch
+			AddBranch(index); 
 		}
-		else // Exit and its branch already exists
+		else // Exits[index] already exists at another location of array Exits
 		{			
-			Exits[index] = nullptr; // Avoid duplicate Exit pointers
+			Exits[index] = nullptr; // Avoid duplicate pointers in Exits
 			RemoveBranch(index);
 		}
 	}
@@ -113,7 +119,33 @@ void AFork::RemoveBranch(int32 index)
 {
 	if (Branches[index] != nullptr)
 	{
-		Branches[index]->DestroyComponent();
+		Branches[index]->DestroyComponent(true);
 		Branches[index] = nullptr;
+	}
+}
+
+//void AFork::OnConstruction(const FTransform &Transform)
+//{
+//	Super::OnConstruction(Transform);
+//
+//	UE_LOG(LogTemp, Warning, TEXT("AFork OnConstruction called!"));
+//}
+
+
+void AFork::OnEntrance(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	if (OtherActor != nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s enters fork %s"), *(OtherActor->GetFName().ToString()), *(GetFName().ToString()));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OtherActor is null in AFork::OnEntrance!"));
 	}
 }
