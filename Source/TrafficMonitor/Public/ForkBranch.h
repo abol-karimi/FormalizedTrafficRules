@@ -46,6 +46,10 @@ public:
 		FVector EntranceDirection,
 		FVector ExitLocation,
 		FVector ExitDirection);
+	void MinimizeCurvatureVariation(FVector EntranceLocation,
+		FVector ExitLocation, 
+		FVector EntranceDirection, 
+		FVector ExitDirection);
 
 public:
 	UPROPERTY()
@@ -53,4 +57,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	UStaticMesh* Mesh;
+
+	UPROPERTY(EditAnywhere)
+	float MaxMeshLength = 1.0f; // in meters
 };

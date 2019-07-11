@@ -3,6 +3,7 @@
 
 #include "ForkBranch.h"
 #include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
+#include "Runtime/Engine/Public/DrawDebugHelpers.h"
 
 // Sets default values
 UForkBranch::UForkBranch()
@@ -26,33 +27,84 @@ void UForkBranch::Init(USceneComponent* RootComponent,
 	SetMobility(EComponentMobility::Static);
 	RegisterComponent();
 
-	// setup the spline points (assuming two points on the spline)
-	SetLocationAtSplinePoint(0, EntranceLocation, ESplineCoordinateSpace::World);
-	SetTangentAtSplinePoint(0, EntranceDirection*1000.f, ESplineCoordinateSpace::World);
-	SetLocationAtSplinePoint(1, ExitLocation, ESplineCoordinateSpace::World);
-	SetTangentAtSplinePoint(1, ExitDirection*1000.f, ESplineCoordinateSpace::World);
+	// setup the spline points (only two points on the spline)
+	MinimizeCurvatureVariation(EntranceLocation, ExitLocation, EntranceDirection, ExitDirection);
 
-	// setup the SplineMeshComponents
-	USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
+	float MaxMeshLengthCM = 100.f*MaxMeshLength;
+	int NumberOfMeshes = FMath::CeilToInt(GetSplineLength() / MaxMeshLengthCM);
+	float MeshLength = GetSplineLength() / NumberOfMeshes;
 
-	SplineMesh->CreationMethod = EComponentCreationMethod::Instance;
-	SplineMesh->SetMobility(EComponentMobility::Static);
-	SplineMesh->SetupAttachment(this);
-	SplineMesh->SetStaticMesh(Mesh);
-	SplineMesh->SetStartPosition(GetLocationAtSplinePoint(0, ESplineCoordinateSpace::Local));
-	SplineMesh->SetEndPosition(GetLocationAtSplinePoint(1, ESplineCoordinateSpace::Local));
-	SplineMesh->SetStartTangent(GetTangentAtSplinePoint(0, ESplineCoordinateSpace::Local));
-	SplineMesh->SetEndTangent(GetTangentAtSplinePoint(1, ESplineCoordinateSpace::Local));
-//	SplineMesh->SetStartScale();
-//	SplineMesh->SetEndScale();
+	//UE_LOG(LogTemp, Warning, TEXT("MaxMeshLengthCM: %f"), MaxMeshLengthCM);
+	//UE_LOG(LogTemp, Warning, TEXT("NumberOfMeshes: %d"), NumberOfMeshes);
+	//UE_LOG(LogTemp, Warning, TEXT("MeshLength: %f"), MeshLength);
 
-	SplineMesh->RegisterComponent();
-	SplineMesh->UpdateRenderStateAndCollision();
+	for (int MeshIndex = 0; MeshIndex < NumberOfMeshes; MeshIndex++)
+	{
+		auto StartPosition = GetLocationAtDistanceAlongSpline(MeshIndex*MeshLength, ESplineCoordinateSpace::Local);
+		auto EndPosition = GetLocationAtDistanceAlongSpline((MeshIndex+1)*MeshLength, ESplineCoordinateSpace::Local);
+		auto StartTangent = GetTangentAtDistanceAlongSpline(MeshIndex*MeshLength, ESplineCoordinateSpace::Local);
+		auto EndTangent = GetTangentAtDistanceAlongSpline((MeshIndex+1)*MeshLength, ESplineCoordinateSpace::Local);
+		auto StartDirection = StartTangent.GetSafeNormal();
+		auto EndDirection = EndTangent.GetSafeNormal();
 
-	SplineMeshComponents.Add(SplineMesh);
+		// setup the SplineMeshComponents
+		USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
+
+		SplineMesh->CreationMethod = EComponentCreationMethod::Instance;
+		SplineMesh->SetMobility(EComponentMobility::Static);
+		SplineMesh->SetupAttachment(this);
+		SplineMesh->SetStaticMesh(Mesh);
+		SplineMesh->SetStartPosition(StartPosition);
+		SplineMesh->SetEndPosition(EndPosition);
+		SplineMesh->SetStartTangent(StartDirection);
+		SplineMesh->SetEndTangent(EndDirection);
+
+		//	SplineMesh->SetStartScale();
+		//	SplineMesh->SetEndScale();
+
+		SplineMesh->RegisterComponent();
+		SplineMesh->UpdateRenderStateAndCollision();
+
+		SplineMeshComponents.Add(SplineMesh);
+	}
+
 
 }
 
+// Reference: 2011_Curvature variation minimizing cubic Hermite interpolants
+void UForkBranch::MinimizeCurvatureVariation(
+	FVector EntranceLocation,
+	FVector ExitLocation,
+	FVector EntranceDirection,
+	FVector ExitDirection)
+{
+	SetLocationAtSplinePoint(0, EntranceLocation, ESplineCoordinateSpace::World);
+	SetLocationAtSplinePoint(1, ExitLocation, ESplineCoordinateSpace::World);
+
+	FVector2D p0 = FVector2D(EntranceLocation.X, EntranceLocation.Y);
+	FVector2D p1 = FVector2D(ExitLocation.X, ExitLocation.Y);
+	FVector2D d0 = FVector2D(EntranceDirection.X, EntranceDirection.Y);
+	FVector2D d1 = FVector2D(ExitDirection.X, ExitDirection.Y);
+	float c01 = FVector2D::CrossProduct(d0, d1);
+	FVector2D delta_p = p1 - p0;
+	float c0 = FVector2D::CrossProduct(d0, delta_p);
+	float c1 = FVector2D::CrossProduct(d1, delta_p);
+	float alpha0 = 0.f;
+	float alpha1 = 0.f;
+	if (c0 * c01 <= 0 || c1 * c01 >= 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Need an intermediate point"));
+		// TODO: handle the intermediate point case
+	}
+	else
+	{
+		alpha0 = -2.f*c1 / c01;
+		alpha1 = 2.f*c0 / c01;
+	}
+
+	SetTangentAtSplinePoint(0, EntranceDirection*alpha0, ESplineCoordinateSpace::World);
+	SetTangentAtSplinePoint(1, ExitDirection*alpha1, ESplineCoordinateSpace::World);
+}
 
 #if WITH_EDITOR
 void UForkBranch::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
