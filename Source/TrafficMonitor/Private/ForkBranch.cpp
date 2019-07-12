@@ -14,6 +14,10 @@ UForkBranch::UForkBranch()
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshFinder
 	(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	Mesh = MeshFinder.Object;
+
+	static ConstructorHelpers::FObjectFinder<UMaterial> MaterialFinder
+	(TEXT("Material'/TrafficMonitor/TransparentBlue.TransparentBlue'"));
+	Material = MaterialFinder.Object;
 }
 
 
@@ -54,6 +58,8 @@ void UForkBranch::Init(USceneComponent* RootComponent,	AIntersectionExit* MyExit
 		SplineMesh->SetMobility(EComponentMobility::Static);
 		SplineMesh->SetupAttachment(this);
 		SplineMesh->SetStaticMesh(Mesh);
+		SplineMesh->SetMaterial(0, Cast<UMaterialInterface>(Material));
+
 		SplineMesh->SetStartPosition(StartPosition);
 		SplineMesh->SetEndPosition(EndPosition);
 		SplineMesh->SetStartTangent(StartDirection);

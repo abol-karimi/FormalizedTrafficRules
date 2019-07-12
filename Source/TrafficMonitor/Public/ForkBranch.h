@@ -53,6 +53,10 @@ public:
 	UStaticMesh* Mesh;
 
 	UPROPERTY(EditAnywhere)
+	UMaterial* Material;
+
+
+	UPROPERTY(EditAnywhere)
 	float MaxMeshLength = 1.0f; // in meters
 
 	AIntersectionExit* MyExit = nullptr;

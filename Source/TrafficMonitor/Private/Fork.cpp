@@ -21,6 +21,7 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 	EntranceTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	EntranceTriggerVolume->SetGenerateOverlapEvents(true);
 	EntranceTriggerVolume->SetBoxExtent(FVector{ 40.0f, 160.0f, 50.0f });
+	EntranceTriggerVolume->ShapeColor = FColor(0, 255, 0);
 
 	ForwardArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("ForwardArrow"));
 	ForwardArrow->SetupAttachment(RootComponent);
@@ -85,6 +86,14 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 		// Destroy the corresponding fork branch
 		RemoveBranch(index);
 		Branches.RemoveAt(index);
+	}
+	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayClear)
+	{
+		for (int32 index = 0; index < Branches.Num(); index++)
+		{
+			RemoveBranch(index);
+		}
+		Branches.Empty();
 	}
 	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd) // Size of Exits incremented
 	{
