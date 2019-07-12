@@ -17,7 +17,7 @@ AIntersectionExit::AIntersectionExit(const FObjectInitializer &ObjectInitializer
 	TriggerVolume->SetMobility(EComponentMobility::Static);
 	TriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	TriggerVolume->SetGenerateOverlapEvents(true);
-	TriggerVolume->SetBoxExtent(FVector{ 20.0f, 150.0f, 50.0f });
+	TriggerVolume->SetBoxExtent(FVector{ 20.0f, 150.f, 50.0f });
 	TriggerVolume->ShapeColor = FColor(255, 0, 0);
 
 	ForwardArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("ForwardArrow"));

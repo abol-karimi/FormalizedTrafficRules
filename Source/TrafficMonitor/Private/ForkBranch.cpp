@@ -4,6 +4,7 @@
 #include "ForkBranch.h"
 #include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
 #include "Runtime/Engine/Public/DrawDebugHelpers.h"
+#include "Fork.h"
 
 // Sets default values
 UForkBranch::UForkBranch()
@@ -16,27 +17,27 @@ UForkBranch::UForkBranch()
 }
 
 
-void UForkBranch::Init(USceneComponent* RootComponent,
-	FVector EntranceLocation,
-	FVector EntranceDirection,
-	FVector ExitLocation,
-	FVector ExitDirection)
+void UForkBranch::Init(USceneComponent* RootComponent,	AIntersectionExit* MyExit)
 {
+	MyFork = Cast<AFork>(GetOwner());
+	
+	this->MyExit = MyExit;
 	SetupAttachment(RootComponent);
 	SetHiddenInGame(true);
 	SetMobility(EComponentMobility::Static);
 	RegisterComponent();
 
-	// setup the spline points (only two points on the spline)
-	MinimizeCurvatureVariation(EntranceLocation, ExitLocation, EntranceDirection, ExitDirection);
+	// setup the two spline points and tangents
+	MinimizeCurvatureVariation();
 
+	// setup the SplineMeshComponents
 	float MaxMeshLengthCM = 100.f*MaxMeshLength;
 	int NumberOfMeshes = FMath::CeilToInt(GetSplineLength() / MaxMeshLengthCM);
 	float MeshLength = GetSplineLength() / NumberOfMeshes;
 
-	//UE_LOG(LogTemp, Warning, TEXT("MaxMeshLengthCM: %f"), MaxMeshLengthCM);
-	//UE_LOG(LogTemp, Warning, TEXT("NumberOfMeshes: %d"), NumberOfMeshes);
-	//UE_LOG(LogTemp, Warning, TEXT("MeshLength: %f"), MeshLength);
+	float EntranceWidth = MyFork->EntranceTriggerVolume->GetScaledBoxExtent().Y;
+	float ExitWidth = MyExit->TriggerVolume->GetScaledBoxExtent().Y;
+	float WidthChange = ExitWidth - EntranceWidth;
 
 	for (int MeshIndex = 0; MeshIndex < NumberOfMeshes; MeshIndex++)
 	{
@@ -47,7 +48,6 @@ void UForkBranch::Init(USceneComponent* RootComponent,
 		auto StartDirection = StartTangent.GetSafeNormal();
 		auto EndDirection = EndTangent.GetSafeNormal();
 
-		// setup the SplineMeshComponents
 		USplineMeshComponent* SplineMesh = NewObject<USplineMeshComponent>(this);
 
 		SplineMesh->CreationMethod = EComponentCreationMethod::Instance;
@@ -59,25 +59,24 @@ void UForkBranch::Init(USceneComponent* RootComponent,
 		SplineMesh->SetStartTangent(StartDirection);
 		SplineMesh->SetEndTangent(EndDirection);
 
-		//	SplineMesh->SetStartScale();
-		//	SplineMesh->SetEndScale();
+		SplineMesh->SetStartScale(FVector2D{ (EntranceWidth + WidthChange * MeshIndex / NumberOfMeshes)/50.f, 1.f });
+		SplineMesh->SetEndScale(FVector2D{ (EntranceWidth + WidthChange * (MeshIndex + 1) / NumberOfMeshes)/50.f, 1.f });
 
 		SplineMesh->RegisterComponent();
 		SplineMesh->UpdateRenderStateAndCollision();
 
 		SplineMeshComponents.Add(SplineMesh);
 	}
-
-
 }
 
 // Reference: 2011_Curvature variation minimizing cubic Hermite interpolants
-void UForkBranch::MinimizeCurvatureVariation(
-	FVector EntranceLocation,
-	FVector ExitLocation,
-	FVector EntranceDirection,
-	FVector ExitDirection)
+void UForkBranch::MinimizeCurvatureVariation()
 {
+	FVector EntranceLocation = MyFork->GetActorLocation();
+	FVector EntranceDirection = MyFork->GetActorForwardVector();
+	FVector ExitLocation = MyExit->GetActorLocation();
+	FVector ExitDirection = MyExit->GetActorForwardVector();
+
 	SetLocationAtSplinePoint(0, EntranceLocation, ESplineCoordinateSpace::World);
 	SetLocationAtSplinePoint(1, ExitLocation, ESplineCoordinateSpace::World);
 
@@ -91,15 +90,15 @@ void UForkBranch::MinimizeCurvatureVariation(
 	float c1 = FVector2D::CrossProduct(d1, delta_p);
 	float alpha0 = 0.f;
 	float alpha1 = 0.f;
-	if (c0 * c01 <= 0 || c1 * c01 >= 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Need an intermediate point"));
-		// TODO: handle the intermediate point case
-	}
-	else
+	if (c0 * c01 > 0 && c1 * c01 < 0)
 	{
 		alpha0 = -2.f*c1 / c01;
 		alpha1 = 2.f*c0 / c01;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Need to handle a special case!"));
+		// TODO: seprate this case into all subcases
 	}
 
 	SetTangentAtSplinePoint(0, EntranceDirection*alpha0, ESplineCoordinateSpace::World);
@@ -113,11 +112,9 @@ void UForkBranch::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedE
 
 	UE_LOG(LogTemp, Warning, TEXT("PostEditChangeProperty called inside ForkBranch!"));
 	UE_LOG(LogTemp, Warning, TEXT("Change Type: %d \n"), PropertyChangedEvent.ChangeType);
-
-
-
 }
 #endif // WITH_EDITOR
+
 
 void UForkBranch::OnBranchBeginOverlap(
 	UPrimitiveComponent* OverlappedComp,
@@ -135,7 +132,6 @@ void UForkBranch::OnBranchBeginOverlap(
 	{
 		UE_LOG(LogTemp, Warning, TEXT("OtherActor is null in OnBranchBeginOverlap!"));
 	}
-
 }
 
 void UForkBranch::BeginPlay()

@@ -20,7 +20,7 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 	EntranceTriggerVolume->SetMobility(EComponentMobility::Static);
 	EntranceTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	EntranceTriggerVolume->SetGenerateOverlapEvents(true);
-	EntranceTriggerVolume->SetBoxExtent(FVector{ 40.0f, 100.0f, 50.0f });
+	EntranceTriggerVolume->SetBoxExtent(FVector{ 40.0f, 160.0f, 50.0f });
 
 	ForwardArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("ForwardArrow"));
 	ForwardArrow->SetupAttachment(RootComponent);
@@ -108,11 +108,7 @@ void AFork::AddBranch(int32 index)
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Exits[%d] is set to %s"), index, *(Exits[index]->GetName()));
 	Branches[index] = NewObject<UForkBranch>(this); // "this" is the owner of the new component
-	Branches[index]->Init(RootComponent,
-		GetActorLocation(),
-		GetActorForwardVector(),
-		Exits[index]->GetActorLocation(),
-		Exits[index]->GetActorForwardVector());
+	Branches[index]->Init(RootComponent, Exits[index]);
 }
 
 void AFork::RemoveBranch(int32 index)

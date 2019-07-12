@@ -35,4 +35,7 @@ public:
 
 	UPROPERTY()
 	UArrowComponent* ForwardArrow;
+
+	//UPROPERTY(EditAnywhere)
+	//float Width = 3.3; // in meters
 };

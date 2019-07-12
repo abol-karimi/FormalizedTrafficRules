@@ -6,6 +6,7 @@
 #include "Components/SplineComponent.h"
 #include "Components/BoxComponent.h"
 #include "Components/SplineMeshComponent.h"
+#include "IntersectionExit.h"
 
 #include "ForkBranch.generated.h"
 
@@ -41,15 +42,8 @@ public:
 		bool bFromSweep, 
 		const FHitResult& SweepResult);
 public:
-	void Init(USceneComponent* RootComponent,
-		FVector EntranceLocation,
-		FVector EntranceDirection,
-		FVector ExitLocation,
-		FVector ExitDirection);
-	void MinimizeCurvatureVariation(FVector EntranceLocation,
-		FVector ExitLocation, 
-		FVector EntranceDirection, 
-		FVector ExitDirection);
+	void Init(USceneComponent* RootComponent, AIntersectionExit* MyExit);
+	void MinimizeCurvatureVariation();
 
 public:
 	UPROPERTY()
@@ -60,4 +54,7 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	float MaxMeshLength = 1.0f; // in meters
+
+	AIntersectionExit* MyExit = nullptr;
+	class AFork* MyFork = nullptr;
 };
