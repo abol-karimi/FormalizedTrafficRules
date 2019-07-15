@@ -24,7 +24,7 @@ AIntersectionExit::AIntersectionExit(const FObjectInitializer &ObjectInitializer
 	ForwardArrow->SetupAttachment(RootComponent);
 	ForwardArrow->SetHiddenInGame(true);
 	ForwardArrow->SetMobility(EComponentMobility::Static);
-	ForwardArrow->SetWorldScale3D(FVector{ 2.f, 2.f, 2.f });
+	ForwardArrow->SetWorldScale3D(FVector{ 3.f, 3.f, 3.f });
 }
 
 // Called when the game starts or when spawned

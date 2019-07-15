@@ -9,8 +9,6 @@
 // Sets default values
 UForkBranch::UForkBranch()
 {
-	UE_LOG(LogTemp, Warning, TEXT("ForkBranch constructor is called!"));
-
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> MeshFinder
 	(TEXT("StaticMesh'/Engine/BasicShapes/Cube.Cube'"));
 	Mesh = MeshFinder.Object;
@@ -32,7 +30,54 @@ void UForkBranch::Init(USceneComponent* RootComponent,	AIntersectionExit* MyExit
 	RegisterComponent();
 
 	// setup the two spline points and tangents
-	MinimizeCurvatureVariation();
+	SetupSpline();
+
+	SetupSplineMeshes();
+}
+
+void UForkBranch::SetupSpline()
+{
+	FVector EntranceLocation = MyFork->GetActorLocation();
+	FVector EntranceDirection = MyFork->GetActorForwardVector();
+	FVector ExitLocation = MyExit->GetActorLocation();
+	FVector ExitDirection = MyExit->GetActorForwardVector();
+
+	SetLocationAtSplinePoint(0, EntranceLocation, ESplineCoordinateSpace::World);
+	SetLocationAtSplinePoint(1, ExitLocation, ESplineCoordinateSpace::World);
+
+	FVector2D p0 = FVector2D(EntranceLocation.X, EntranceLocation.Y);
+	FVector2D p1 = FVector2D(ExitLocation.X, ExitLocation.Y);
+	FVector2D d0 = FVector2D(EntranceDirection.X, EntranceDirection.Y);
+	FVector2D d1 = FVector2D(ExitDirection.X, ExitDirection.Y);
+	float Alpha0 = 1.f;
+	float Alpha1 = 1.f;
+	//bool bCanInterpolate = MinimumCurvatureVariation(p0, p1, d0, d1, Alpha0, Alpha1);
+	float TurnAngleCosine = EntranceDirection.CosineAngle2D(ExitDirection);
+	if (TurnAngleCosine < -0.8f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Need to make a U-turn!"));
+		// Need a mid-turn interpolant
+	}
+	else if (MinimumCurvatureVariation(p0, p1, d0, d1, Alpha0, Alpha1))
+	{
+		SetTangentAtSplinePoint(0, EntranceDirection*Alpha0, ESplineCoordinateSpace::World);
+		SetTangentAtSplinePoint(1, ExitDirection*Alpha1, ESplineCoordinateSpace::World);
+	}
+	else // Need an inflection point
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Need an inflection point!"));
+	}
+
+}
+
+void UForkBranch::SetupSplineMeshes()
+{
+	// remove previous spline meshes
+	for (auto& SplineMeshComponent : SplineMeshComponents)
+	{
+		SplineMeshComponent->DestroyComponent();
+	}
+	SplineMeshComponents.Empty();
 
 	// setup the SplineMeshComponents
 	float MaxMeshLengthCM = 100.f*MaxMeshLength;
@@ -46,9 +91,9 @@ void UForkBranch::Init(USceneComponent* RootComponent,	AIntersectionExit* MyExit
 	for (int MeshIndex = 0; MeshIndex < NumberOfMeshes; MeshIndex++)
 	{
 		auto StartPosition = GetLocationAtDistanceAlongSpline(MeshIndex*MeshLength, ESplineCoordinateSpace::Local);
-		auto EndPosition = GetLocationAtDistanceAlongSpline((MeshIndex+1)*MeshLength, ESplineCoordinateSpace::Local);
+		auto EndPosition = GetLocationAtDistanceAlongSpline((MeshIndex + 1)*MeshLength, ESplineCoordinateSpace::Local);
 		auto StartTangent = GetTangentAtDistanceAlongSpline(MeshIndex*MeshLength, ESplineCoordinateSpace::Local);
-		auto EndTangent = GetTangentAtDistanceAlongSpline((MeshIndex+1)*MeshLength, ESplineCoordinateSpace::Local);
+		auto EndTangent = GetTangentAtDistanceAlongSpline((MeshIndex + 1)*MeshLength, ESplineCoordinateSpace::Local);
 		auto StartDirection = StartTangent.GetSafeNormal();
 		auto EndDirection = EndTangent.GetSafeNormal();
 
@@ -65,8 +110,8 @@ void UForkBranch::Init(USceneComponent* RootComponent,	AIntersectionExit* MyExit
 		SplineMesh->SetStartTangent(StartDirection);
 		SplineMesh->SetEndTangent(EndDirection);
 
-		SplineMesh->SetStartScale(FVector2D{ (EntranceWidth + WidthChange * MeshIndex / NumberOfMeshes)/50.f, 1.f });
-		SplineMesh->SetEndScale(FVector2D{ (EntranceWidth + WidthChange * (MeshIndex + 1) / NumberOfMeshes)/50.f, 1.f });
+		SplineMesh->SetStartScale(FVector2D{ (EntranceWidth + WidthChange * MeshIndex / NumberOfMeshes) / 50.f, 1.f });
+		SplineMesh->SetEndScale(FVector2D{ (EntranceWidth + WidthChange * (MeshIndex + 1) / NumberOfMeshes) / 50.f, 1.f });
 
 		SplineMesh->RegisterComponent();
 		SplineMesh->UpdateRenderStateAndCollision();
@@ -75,49 +120,23 @@ void UForkBranch::Init(USceneComponent* RootComponent,	AIntersectionExit* MyExit
 	}
 }
 
-// Reference: 2011_Curvature variation minimizing cubic Hermite interpolants
-void UForkBranch::MinimizeCurvatureVariation()
-{
-	FVector EntranceLocation = MyFork->GetActorLocation();
-	FVector EntranceDirection = MyFork->GetActorForwardVector();
-	FVector ExitLocation = MyExit->GetActorLocation();
-	FVector ExitDirection = MyExit->GetActorForwardVector();
-
-	SetLocationAtSplinePoint(0, EntranceLocation, ESplineCoordinateSpace::World);
-	SetLocationAtSplinePoint(1, ExitLocation, ESplineCoordinateSpace::World);
-
-	FVector2D p0 = FVector2D(EntranceLocation.X, EntranceLocation.Y);
-	FVector2D p1 = FVector2D(ExitLocation.X, ExitLocation.Y);
-	FVector2D d0 = FVector2D(EntranceDirection.X, EntranceDirection.Y);
-	FVector2D d1 = FVector2D(ExitDirection.X, ExitDirection.Y);
-	float c01 = FVector2D::CrossProduct(d0, d1);
-	FVector2D delta_p = p1 - p0;
-	float c0 = FVector2D::CrossProduct(d0, delta_p);
-	float c1 = FVector2D::CrossProduct(d1, delta_p);
-	float alpha0 = 0.f;
-	float alpha1 = 0.f;
-	if (c0 * c01 > 0 && c1 * c01 < 0)
-	{
-		alpha0 = -2.f*c1 / c01;
-		alpha1 = 2.f*c0 / c01;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Need to handle a special case!"));
-		// TODO: seprate this case into all subcases
-	}
-
-	SetTangentAtSplinePoint(0, EntranceDirection*alpha0, ESplineCoordinateSpace::World);
-	SetTangentAtSplinePoint(1, ExitDirection*alpha1, ESplineCoordinateSpace::World);
-}
-
 #if WITH_EDITOR
 void UForkBranch::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	UE_LOG(LogTemp, Warning, TEXT("PostEditChangeProperty called inside ForkBranch!"));
-	UE_LOG(LogTemp, Warning, TEXT("Change Type: %d \n"), PropertyChangedEvent.ChangeType);
+	if (!PropertyChangedEvent.Property)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UForkBranch PropertyChangedEvent.Property is null!"));
+		return;
+	}
+	else if (PropertyChangedEvent.GetPropertyName() != FName("SplineCurves"))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UForkBranch property %s changed!"), *(PropertyChangedEvent.GetPropertyName().ToString()));
+		return;
+	}
+
+	SetupSplineMeshes();
 }
 #endif // WITH_EDITOR
 
@@ -160,4 +179,22 @@ void UForkBranch::DestroyComponent(bool bPromoteChildren=false)
 		SplineMeshComponent->DestroyComponent();
 	}
 	Super::DestroyComponent(bPromoteChildren);
+}
+
+// Reference: "2011_Curvature variation minimizing cubic Hermite interpolants"
+bool UForkBranch::MinimumCurvatureVariation(FVector2D p0, FVector2D p1, FVector2D d0, FVector2D d1, float& OutAlpha0, float& OutAlpha1)
+{
+	float c01 = FVector2D::CrossProduct(d0, d1);
+	FVector2D delta_p = p1 - p0;
+	float c0 = FVector2D::CrossProduct(d0, delta_p);
+	float c1 = FVector2D::CrossProduct(d1, delta_p);
+	float alpha0 = 1.f;
+	float alpha1 = 1.f;
+	if (c0 * c01 > 0 && c1 * c01 < 0)
+	{
+		OutAlpha0 = -2.f*c1 / c01;
+		OutAlpha1 = 2.f*c0 / c01;
+		return true;
+	}
+	return false;
 }

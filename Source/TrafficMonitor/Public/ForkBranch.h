@@ -43,7 +43,11 @@ public:
 		const FHitResult& SweepResult);
 public:
 	void Init(USceneComponent* RootComponent, AIntersectionExit* MyExit);
-	void MinimizeCurvatureVariation();
+	void SetupSpline();
+	void SetupSplineMeshes();
+
+private:
+	bool MinimumCurvatureVariation(FVector2D p0, FVector2D p1, FVector2D d0, FVector2D d1, float& OutAlpha0, float& OutAlpha1);
 
 public:
 	UPROPERTY()
@@ -54,7 +58,6 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	UMaterial* Material;
-
 
 	UPROPERTY(EditAnywhere)
 	float MaxMeshLength = 1.0f; // in meters

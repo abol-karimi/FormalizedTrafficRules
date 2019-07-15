@@ -27,7 +27,8 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 	ForwardArrow->SetupAttachment(RootComponent);
 	ForwardArrow->SetHiddenInGame(true);
 	ForwardArrow->SetMobility(EComponentMobility::Static);
-	ForwardArrow->SetWorldScale3D(FVector{ 2.f, 2.f, 2.f });
+	ForwardArrow->SetWorldScale3D(FVector{ 3.f, 3.f, 3.f });
+	ForwardArrow->SetArrowColor(FLinearColor(0, 255, 0));
 }
 
 // Called when the game starts or when spawned
@@ -49,18 +50,18 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 	UE_LOG(LogTemp, Warning, TEXT("Change Type: %d"), PropertyChangedEvent.ChangeType);
 	if (!PropertyChangedEvent.Property)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("PropertyChangedEvent.Property is null!"));
+		UE_LOG(LogTemp, Warning, TEXT("AFork PropertyChangedEvent.Property is null!"));
 		return;
 	}
 	else if (PropertyChangedEvent.GetPropertyName() != FName("Exits"))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("A property other than Exits changed!"));
+		UE_LOG(LogTemp, Warning, TEXT("AFork property %s changed!"), *(PropertyChangedEvent.GetPropertyName().ToString()));
 		return;
 	}
 
 	// The index at which the array Exits is modified
 	const auto index = PropertyChangedEvent.GetArrayIndex(FString("Exits"));
-	UE_LOG(LogTemp, Warning, TEXT("PropertyChangedEvent.GetArrayIndex(): %d"), index);
+	//UE_LOG(LogTemp, Warning, TEXT("AFork PropertyChangedEvent.GetArrayIndex(): %d"), index);
 
 	if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ValueSet)
 	{
