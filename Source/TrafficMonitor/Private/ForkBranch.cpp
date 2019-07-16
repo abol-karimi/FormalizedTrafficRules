@@ -151,7 +151,12 @@ void UForkBranch::OnBranchBeginOverlap(
 {
 	if (OtherActor != nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s begins overlap lane %s"), *(OtherActor->GetFName().ToString()), *(GetFName().ToString()));
+		FString EventMessage = OtherActor->GetFName().ToString() + " begins overlap " + GetFName().ToString();
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
+		if (MyFork != nullptr && MyFork->MyMonitor != nullptr)
+		{
+			MyFork->MyMonitor->AddEvent(EventMessage);
+		}
 	}
 	else
 	{

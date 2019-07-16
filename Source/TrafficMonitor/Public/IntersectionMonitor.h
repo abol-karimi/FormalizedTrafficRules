@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Runtime/Engine/Classes/Components/StaticMeshComponent.h"
 #include "Runtime/Engine/Classes/Components/BillboardComponent.h"
+#include "Runtime/Engine/Classes/Components/BoxComponent.h"
 
 #include "IntersectionMonitor.generated.h"
 
@@ -22,12 +23,20 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-#if WITH_EDITOR
-	virtual void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent) override;
-#endif // WITH_EDITOR
+public:
+	void CreateLogFile();
+	void AddToLoggers();
+	void AddEvent(FString EventMessage);
 
 public:
 	UPROPERTY()
 	UBillboardComponent* Billboard;
+
+	UPROPERTY(EditAnywhere)
+	UBoxComponent* ExtentBox;
+
+private:
+	FString FileName;
+	FString AbsoluteFilePath;
 
 };

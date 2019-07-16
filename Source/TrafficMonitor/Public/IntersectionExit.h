@@ -2,11 +2,16 @@
 
 #pragma once
 
+// Engine's built-in
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
 #include "Components/ArrowComponent.h"
 
+// Developer
+#include "IntersectionMonitor.h"
+
+// Generated
 #include "IntersectionExit.generated.h"
 
 UCLASS()
@@ -36,6 +41,7 @@ public:
 	UPROPERTY()
 	UArrowComponent* ForwardArrow;
 
-	//UPROPERTY(EditAnywhere)
-	//float Width = 3.3; // in meters
+	UPROPERTY(EditAnywhere)
+	AIntersectionMonitor* MyMonitor;
+
 };

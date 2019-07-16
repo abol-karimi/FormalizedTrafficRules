@@ -2,6 +2,7 @@
 
 #pragma once
 
+// Engine built-in
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
@@ -10,7 +11,9 @@
 // Developer
 #include "IntersectionExit.h"
 #include "ForkBranch.h"
+#include "IntersectionMonitor.h"
 
+// Generated
 #include "Fork.generated.h"
 
 UCLASS()
@@ -50,9 +53,13 @@ public:
 	UPROPERTY(EditAnywhere)
 	UArrowComponent* ForwardArrow;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, meta=(NoElementDuplicate))
 	TArray<AIntersectionExit*> Exits;
 
 	UPROPERTY(VisibleAnywhere)
 	TArray<UForkBranch*> Branches;
+
+	UPROPERTY(EditAnywhere)
+	AIntersectionMonitor* MyMonitor;
+
 };

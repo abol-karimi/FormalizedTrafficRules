@@ -45,7 +45,12 @@ void AIntersectionExit::OnExit(
 {
 	if (OtherActor != nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s exits from exit %s"), *(OtherActor->GetFName().ToString()), *(GetFName().ToString()));
+		FString EventMessage = OtherActor->GetFName().ToString() + " exits from " + GetFName().ToString();
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
+		if (MyMonitor != nullptr)
+		{
+			MyMonitor->AddEvent(EventMessage);
+		}
 	}
 	else
 	{
