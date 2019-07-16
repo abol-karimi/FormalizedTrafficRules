@@ -7,8 +7,6 @@
 #include "Runtime/Engine/Classes/Components/StaticMeshComponent.h"
 #include "Runtime/Engine/Classes/Components/BillboardComponent.h"
 
-#include "IntersectionEntrance.h"
-
 #include "IntersectionMonitor.generated.h"
 
 UCLASS()
@@ -31,8 +29,5 @@ protected:
 public:
 	UPROPERTY()
 	UBillboardComponent* Billboard;
-
-	UPROPERTY(Category = "Entrances", EditAnywhere)
-	TArray<AIntersectionEntrance*> Entrances;
 
 };
