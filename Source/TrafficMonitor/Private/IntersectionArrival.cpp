@@ -1,11 +1,11 @@
 // Copyright (c) 2017 Computer Vision Center (CVC) at the Universitat Autonoma de Barcelona (UAB). This work is licensed under the terms of the MIT license. For a copy, see <https://opensource.org/licenses/MIT>.
 
 
-#include "IntersectionExit.h"
+#include "IntersectionArrival.h"
 
 // Sets default values
-AIntersectionExit::AIntersectionExit(const FObjectInitializer &ObjectInitializer)
-	: Super(ObjectInitializer)
+AIntersectionArrival::AIntersectionArrival(const FObjectInitializer &ObjectInitializer)
+	:Super(ObjectInitializer)
 {
 	RootComponent =
 		ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this, TEXT("SceneRootComponent"));
@@ -17,38 +17,45 @@ AIntersectionExit::AIntersectionExit(const FObjectInitializer &ObjectInitializer
 	TriggerVolume->SetMobility(EComponentMobility::Static);
 	TriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	TriggerVolume->SetGenerateOverlapEvents(true);
-	TriggerVolume->SetBoxExtent(FVector{ 20.0f, 150.f, 50.0f });
-	TriggerVolume->ShapeColor = FColor(255, 0, 0);
+	TriggerVolume->SetBoxExtent(FVector{ 100.0f, 150.f, 50.0f });
+	TriggerVolume->ShapeColor = FColor(0, 0, 255);
 
 	ForwardArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("ForwardArrow"));
 	ForwardArrow->SetupAttachment(RootComponent);
 	ForwardArrow->SetHiddenInGame(true);
 	ForwardArrow->SetMobility(EComponentMobility::Static);
 	ForwardArrow->SetWorldScale3D(FVector{ 3.f, 3.f, 3.f });
+
 }
 
 // Called when the game starts or when spawned
-void AIntersectionExit::BeginPlay()
+void AIntersectionArrival::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	TriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	TriggerVolume->SetGenerateOverlapEvents(true);
-	TriggerVolume->OnComponentEndOverlap.AddDynamic(this, &AIntersectionExit::OnExit);
+	TriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionArrival::OnArrival);
+	
 }
 
-void AIntersectionExit::OnExit(
+void AIntersectionArrival::OnArrival(
 	UPrimitiveComponent* OverlappedComp,
 	AActor* OtherActor,
 	UPrimitiveComponent* OtherComp,
-	int32 OtherBodyIndex)
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
 {
 	if (OtherActor != nullptr)
 	{
 		if (MyMonitor != nullptr)
 		{
 			int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-			FString EventMessage = "exitsIntersectionAtTime(" + OtherActor->GetFName().ToString() + ", " + FString::FromInt(TimeStep) + ").";
+			FString EventMessage = "ArrivesFromAtTime(_" 
+				+ OtherActor->GetName() + ", _" 
+				+ GetName() + ", "
+				+ FString::FromInt(TimeStep) + ").";
 			UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 			MyMonitor->AddEvent(EventMessage);
 		}
@@ -62,3 +69,4 @@ void AIntersectionExit::OnExit(
 		UE_LOG(LogTemp, Warning, TEXT("OtherActor is null in AIntersectionExit::OnExit!"));
 	}
 }
+

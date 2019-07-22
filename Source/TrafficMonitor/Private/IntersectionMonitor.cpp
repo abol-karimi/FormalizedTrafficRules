@@ -4,7 +4,10 @@
 #include "IntersectionMonitor.h"
 #include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
 #include "Runtime/Core/Public/Misc/Paths.h"
+
+// Developer
 #include "Fork.h"
+#include "IntersectionArrival.h"
 
 #include <fstream>
 #include <iostream>
@@ -36,7 +39,7 @@ AIntersectionMonitor::AIntersectionMonitor(const FObjectInitializer &ObjectIniti
 	ExtentBox->SetMobility(EComponentMobility::Static);
 	ExtentBox->SetCollisionProfileName(FName("OverlapAll"));
 	ExtentBox->SetGenerateOverlapEvents(true);
-	ExtentBox->SetBoxExtent(FVector{ 1500.0f, 1500.0f, 100.0f });
+	ExtentBox->SetBoxExtent(FVector{ 1800.0f, 1800.0f, 100.0f });
 	ExtentBox->ShapeColor = FColor(255, 255, 255);
 }
 
@@ -85,6 +88,21 @@ void AIntersectionMonitor::AddToLoggers()
 		}
 	}
 
+	OverlappingActors.Empty();
+	GetOverlappingActors(OverlappingActors, AIntersectionArrival::StaticClass());
+	for (AActor* Exit : OverlappingActors)
+	{
+		AIntersectionArrival* ExitPtr = Cast<AIntersectionArrival>(Exit);
+		if (ExitPtr != nullptr)
+		{
+			ExitPtr->MyMonitor = this;
+			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(ExitPtr->GetName()));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Could not connect: Overlapping actor was null!"));
+		}
+	}
 }
 
 

@@ -59,7 +59,7 @@ public:
 	UPROPERTY(VisibleAnywhere)
 	TArray<UForkBranch*> Branches;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY()
 	AIntersectionMonitor* MyMonitor;
 
 };

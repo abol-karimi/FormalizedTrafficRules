@@ -12,16 +12,16 @@
 #include "IntersectionMonitor.h"
 
 // Generated
-#include "IntersectionExit.generated.h"
+#include "IntersectionArrival.generated.h"
 
 UCLASS()
-class TRAFFICMONITOR_API AIntersectionExit : public AActor
+class TRAFFICMONITOR_API AIntersectionArrival : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AIntersectionExit(const FObjectInitializer &ObjectInitializer);
+	AIntersectionArrival(const FObjectInitializer &ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned
@@ -29,19 +29,20 @@ protected:
 
 public:
 	UFUNCTION()
-		void OnExit(
+		void OnArrival(
 			UPrimitiveComponent* OverlappedComp,
 			AActor* OtherActor,
 			UPrimitiveComponent* OtherComp,
-			int32 OtherBodyIndex);
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult& SweepResult);
 public:
 	UPROPERTY(EditAnywhere)
-	UBoxComponent* TriggerVolume;
+		UBoxComponent* TriggerVolume;
 
 	UPROPERTY()
-	UArrowComponent* ForwardArrow;
+		UArrowComponent* ForwardArrow;
 
 	UPROPERTY()
-	AIntersectionMonitor* MyMonitor;
-
+		AIntersectionMonitor* MyMonitor;
 };

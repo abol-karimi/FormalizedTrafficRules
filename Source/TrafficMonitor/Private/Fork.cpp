@@ -148,11 +148,16 @@ void AFork::OnEntrance(
 {
 	if (OtherActor != nullptr)
 	{
-		FString EventMessage = OtherActor->GetFName().ToString() + " enters fork " + GetFName().ToString();
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 		if (MyMonitor != nullptr)
 		{
+			int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
+			FString EventMessage = "entersIntersectionAtTime(" + OtherActor->GetName() + ", " + FString::FromInt(TimeStep) + ").";
+			UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 			MyMonitor->AddEvent(EventMessage);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in AFork::OnEntrance!"));
 		}
 	}
 	else

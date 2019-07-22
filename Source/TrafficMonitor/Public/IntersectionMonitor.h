@@ -34,9 +34,11 @@ public:
 
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* ExtentBox;
+	float TimeResolution = 0.5f;
 
 private:
 	FString FileName;
 	FString AbsoluteFilePath;
+	
 
 };
