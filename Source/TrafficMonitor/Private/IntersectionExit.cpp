@@ -48,7 +48,9 @@ void AIntersectionExit::OnExit(
 		if (MyMonitor != nullptr)
 		{
 			int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-			FString EventMessage = "exitsIntersectionAtTime(" + OtherActor->GetFName().ToString() + ", " + FString::FromInt(TimeStep) + ").";
+			FString EventMessage = "exitsIntersectionAtTime(_" 
+				+ OtherActor->GetFName().ToString() + ", " 
+				+ FString::FromInt(TimeStep) + ").";
 			UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 			MyMonitor->AddEvent(EventMessage);
 		}

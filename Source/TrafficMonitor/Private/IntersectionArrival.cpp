@@ -3,6 +3,9 @@
 
 #include "IntersectionArrival.h"
 
+#include "Vehicle/CarlaWheeledVehicle.h"
+
+
 // Sets default values
 AIntersectionArrival::AIntersectionArrival(const FObjectInitializer &ObjectInitializer)
 	:Super(ObjectInitializer)
@@ -52,12 +55,44 @@ void AIntersectionArrival::OnArrival(
 		if (MyMonitor != nullptr)
 		{
 			int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-			FString EventMessage = "ArrivesFromAtTime(_" 
+			FString EventMessage = "arrivesFromAtTime(_" 
 				+ OtherActor->GetName() + ", _" 
 				+ GetName() + ", "
 				+ FString::FromInt(TimeStep) + ").";
 			UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 			MyMonitor->AddEvent(EventMessage);
+
+			ACarlaWheeledVehicle* OverLappingVehicle = Cast<ACarlaWheeledVehicle>(OtherActor);
+			if (OverLappingVehicle != nullptr)
+			{
+				auto Signal = OverLappingVehicle->Signal;
+				FString SignalString;
+				switch (Signal)	{
+				case EVehicleSignalState::Off:
+					SignalString = "off";
+					break;
+				case EVehicleSignalState::Left:
+					SignalString = "left";
+					break;
+				case EVehicleSignalState::Right:
+					SignalString = "right";
+					break;
+				case EVehicleSignalState::Emergency:
+					SignalString = "emergency";
+					break;
+				}
+				EventMessage = "signalsFromAtTime(_"
+					+ OtherActor->GetName() + ", "
+					+ SignalString + ", _"
+					+ GetName() + ", "
+					+ FString::FromInt(TimeStep) + ").";
+				UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
+				MyMonitor->AddEvent(EventMessage);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Cast to ACarlaWheeledVehicle failed!"));
+			}
 		}
 		else
 		{

@@ -90,9 +90,9 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 	}
 	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayClear)
 	{
-		for (int32 index = 0; index < Branches.Num(); index++)
+		for (int32 i = 0; i < Branches.Num(); i++)
 		{
-			RemoveBranch(index);
+			RemoveBranch(i);
 		}
 		Branches.Empty();
 	}
@@ -151,7 +151,10 @@ void AFork::OnEntrance(
 		if (MyMonitor != nullptr)
 		{
 			int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-			FString EventMessage = "entersIntersectionAtTime(" + OtherActor->GetName() + ", " + FString::FromInt(TimeStep) + ").";
+			FString EventMessage = "entersFromAtTime(_" 
+				+ OtherActor->GetName() + ", _" 
+				+ GetName() + ", "
+				+ FString::FromInt(TimeStep) + ").";
 			UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 			MyMonitor->AddEvent(EventMessage);
 		}
