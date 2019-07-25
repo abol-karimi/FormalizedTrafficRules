@@ -24,8 +24,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void CreateLogFile();
-	void AddToLoggers();
 	void AddEvent(FString EventMessage);
 
 public:
@@ -37,6 +35,10 @@ public:
 	float TimeResolution = 0.5f;
 
 private:
+	void CreateLogFile();
+	void AddToLoggers();
+	void LogGeometry();
+
 	FString FileName;
 	FString AbsoluteFilePath;
 	

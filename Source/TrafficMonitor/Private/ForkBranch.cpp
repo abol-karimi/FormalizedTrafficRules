@@ -51,7 +51,6 @@ void UForkBranch::SetupSpline()
 	FVector2D d1 = FVector2D(ExitDirection.X, ExitDirection.Y);
 	float Alpha0 = 1.f;
 	float Alpha1 = 1.f;
-	//bool bCanInterpolate = MinimumCurvatureVariation(p0, p1, d0, d1, Alpha0, Alpha1);
 	float TurnAngleCosine = EntranceDirection.CosineAngle2D(ExitDirection);
 	if (TurnAngleCosine < -0.8f)
 	{
