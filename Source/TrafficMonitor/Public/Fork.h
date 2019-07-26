@@ -10,7 +10,7 @@
 
 // Developer
 #include "IntersectionExit.h"
-#include "ForkBranch.h"
+#include "Lane.h"
 #include "IntersectionMonitor.h"
 
 // Generated
@@ -35,11 +35,11 @@ protected:
 #endif // WITH_EDITOR
 
 public:
-	void AddBranch(int32 index);
-	void RemoveBranch(int32 index);
+	void AddLane(int32 index);
+	void RemoveLane(int32 index);
 
 	UFUNCTION()
-		void OnEntrance(
+	void OnEntrance(
 			UPrimitiveComponent* OverlappedComp,
 			AActor* OtherActor,
 			UPrimitiveComponent* OtherComp,
@@ -57,7 +57,7 @@ public:
 	TArray<AIntersectionExit*> Exits;
 
 	UPROPERTY(VisibleAnywhere)
-	TArray<UForkBranch*> Branches;
+	TArray<ALane*> Lanes;
 
 	UPROPERTY()
 	AIntersectionMonitor* MyMonitor;

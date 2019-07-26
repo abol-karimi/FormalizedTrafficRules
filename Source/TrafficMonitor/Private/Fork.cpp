@@ -67,39 +67,39 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 	{
 		if (Exits[index] == nullptr)
 		{
-			RemoveBranch(index); // Does nothing if Branches[index] == nullptr
+			RemoveLane(index); // Does nothing if Branches[index] == nullptr
 		}
 		else if (index == Exits.Find(Exits[index]) && index == Exits.FindLast(Exits[index]))
 		{ // Exits[index] is valid and unique in Exits
 			// Remove previously associated branch, if any
-			RemoveBranch(index); 
+			RemoveLane(index); 
 			// Associate a new branch
-			AddBranch(index); 
+			AddLane(index); 
 		}
 		else // Exits[index] already exists at another location of array Exits
 		{			
 			Exits[index] = nullptr; // Avoid duplicate pointers in Exits
-			RemoveBranch(index);
+			RemoveLane(index);
 		}
 	}
 	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayRemove)
 	{
 		// Destroy the corresponding fork branch
-		RemoveBranch(index);
-		Branches.RemoveAt(index);
+		RemoveLane(index);
+		Lanes.RemoveAt(index);
 	}
 	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayClear)
 	{
-		for (int32 i = 0; i < Branches.Num(); i++)
+		for (int32 i = 0; i < Lanes.Num(); i++)
 		{
-			RemoveBranch(i);
+			RemoveLane(i);
 		}
-		Branches.Empty();
+		Lanes.Empty();
 	}
 	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd) // Size of Exits incremented
 	{
 		// Increment the size of Branches
-		Branches.Add(nullptr);
+		Lanes.Add(nullptr);
 	}
 	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::Duplicate)
 	{
@@ -109,7 +109,7 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 #endif // WITH_EDITOR
 
 
-void AFork::AddBranch(int32 index)
+void AFork::AddLane(int32 index)
 {
 	if (Exits[index] == nullptr)
 	{
@@ -117,16 +117,16 @@ void AFork::AddBranch(int32 index)
 		return;
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Exits[%d] is set to %s"), index, *(Exits[index]->GetName()));
-	Branches[index] = NewObject<UForkBranch>(this); // "this" is the owner of the new component
-	Branches[index]->Init(RootComponent, Exits[index]);
+	Lanes[index] = GetWorld()->SpawnActor<ALane>();
+	Lanes[index]->Init(this, Exits[index]);
 }
 
-void AFork::RemoveBranch(int32 index)
+void AFork::RemoveLane(int32 index)
 {
-	if (Branches[index] != nullptr)
+	if (Lanes[index] != nullptr)
 	{
-		Branches[index]->DestroyComponent(true);
-		Branches[index] = nullptr;
+		Lanes[index]->Destroy();
+		Lanes[index] = nullptr;
 	}
 }
 

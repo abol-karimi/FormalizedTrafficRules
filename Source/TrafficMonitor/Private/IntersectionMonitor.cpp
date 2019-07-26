@@ -61,13 +61,13 @@ void AIntersectionMonitor::AddToLoggers()
 {
 	TArray<AActor *> OverlappingActors;
 	GetOverlappingActors(OverlappingActors, AFork::StaticClass());
-	for (AActor* Fork : OverlappingActors)
+	for (AActor* Actor : OverlappingActors)
 	{
-		AFork* ForkPtr = Cast<AFork>(Fork);
-		if (ForkPtr != nullptr)
+		AFork* Fork = Cast<AFork>(Actor);
+		if (Fork != nullptr)
 		{
-			ForkPtr->MyMonitor = this;
-			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(ForkPtr->GetName()));
+			Fork->MyMonitor = this;
+			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Fork->GetName()));
 		}
 		else
 		{
@@ -77,9 +77,25 @@ void AIntersectionMonitor::AddToLoggers()
 	
 	OverlappingActors.Empty();
 	GetOverlappingActors(OverlappingActors, AIntersectionExit::StaticClass());
-	for (AActor* Exit : OverlappingActors)
+	for (AActor* Actor : OverlappingActors)
 	{
-		AIntersectionExit* ExitPtr = Cast<AIntersectionExit>(Exit);
+		AIntersectionExit* Exit = Cast<AIntersectionExit>(Actor);
+		if (Exit != nullptr)
+		{
+			Exit->MyMonitor = this;
+			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Exit->GetName()));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Could not connect: Overlapping actor was null!"));
+		}
+	}
+
+	OverlappingActors.Empty();
+	GetOverlappingActors(OverlappingActors, AIntersectionArrival::StaticClass());
+	for (AActor* Actor : OverlappingActors)
+	{
+		AIntersectionArrival* ExitPtr = Cast<AIntersectionArrival>(Actor);
 		if (ExitPtr != nullptr)
 		{
 			ExitPtr->MyMonitor = this;
@@ -92,14 +108,14 @@ void AIntersectionMonitor::AddToLoggers()
 	}
 
 	OverlappingActors.Empty();
-	GetOverlappingActors(OverlappingActors, AIntersectionArrival::StaticClass());
-	for (AActor* Exit : OverlappingActors)
+	GetOverlappingActors(OverlappingActors, ALane::StaticClass());
+	for (AActor* Actor : OverlappingActors)
 	{
-		AIntersectionArrival* ExitPtr = Cast<AIntersectionArrival>(Exit);
-		if (ExitPtr != nullptr)
+		ALane* Lane = Cast<ALane>(Actor);
+		if (Lane != nullptr)
 		{
-			ExitPtr->MyMonitor = this;
-			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(ExitPtr->GetName()));
+			Lane->MyMonitor = this;
+			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Lane->GetName()));
 		}
 		else
 		{
