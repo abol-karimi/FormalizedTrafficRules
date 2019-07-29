@@ -25,10 +25,12 @@ public:
 	// Sets default values for this actor's properties
 	AFork(const FObjectInitializer &ObjectInitializer);
 
+//	virtual void OnConstruction(const FTransform &Transform) override;
+//	virtual void PostEditMove(bool bFinished) override;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
-//	virtual void OnConstruction(const FTransform &Transform) override;
 
 #if WITH_EDITOR
 	virtual void PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent) override;
@@ -37,6 +39,7 @@ protected:
 public:
 	void AddLane(int32 index);
 	void RemoveLane(int32 index);
+	void SetMonitor(AIntersectionMonitor* Monitor);
 
 	UFUNCTION()
 	void OnEntrance(
@@ -74,5 +77,7 @@ public:
 
 	UPROPERTY()
 	AIntersectionMonitor* MyMonitor;
+
+private:
 
 };

@@ -64,40 +64,8 @@ void AIntersectionMonitor::AddToLoggers()
 		AFork* Fork = Cast<AFork>(Actor);
 		if (Fork != nullptr)
 		{
-			Fork->MyMonitor = this;
-			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Fork->GetName()));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Could not connect: Overlapping actor was null!"));
-		}
-	}
-	
-	OverlappingActors.Empty();
-	GetOverlappingActors(OverlappingActors, AIntersectionExit::StaticClass());
-	for (AActor* Actor : OverlappingActors)
-	{
-		AIntersectionExit* Exit = Cast<AIntersectionExit>(Actor);
-		if (Exit != nullptr)
-		{
-			Exit->MyMonitor = this;
-			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Exit->GetName()));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Could not connect: Overlapping actor was null!"));
-		}
-	}
-
-	OverlappingActors.Empty();
-	GetOverlappingActors(OverlappingActors, ALane::StaticClass());
-	for (AActor* Actor : OverlappingActors)
-	{
-		ALane* Lane = Cast<ALane>(Actor);
-		if (Lane != nullptr)
-		{
-			Lane->MyMonitor = this;
-			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Lane->GetName()));
+			Fork->SetMonitor(this);
+			//UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Fork->GetName()));
 		}
 		else
 		{

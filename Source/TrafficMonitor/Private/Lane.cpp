@@ -5,6 +5,8 @@
 #include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
 #include "Fork.h"
 
+
+
 // Sets default values
 ALane::ALane(const FObjectInitializer &ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -41,12 +43,38 @@ void ALane::Init(AFork* MyFork, AIntersectionExit* MyExit)
 {
 	this->MyFork = MyFork;
 	this->MyExit = MyExit;
+	MyMonitor = MyFork->MyMonitor;
 
+	SetActorLabel(GetName());
 	
-	// setup the two spline points and tangents
+	SetTurningDirection();
+
 	SetupSpline();
 
 	SetupSplineMeshes();
+}
+
+void ALane::SetTurningDirection()
+{
+	auto EntranceDirection = MyFork->GetActorForwardVector();
+	auto ExitDirection = MyExit->GetActorForwardVector();
+
+	float Z = FVector::CrossProduct(EntranceDirection, ExitDirection).Z;
+	auto Cosine = EntranceDirection.CosineAngle2D(FVector::VectorPlaneProject(ExitDirection, FVector(0.f, 0.f, 1.f)));
+
+	EVehicleSignalState Signal = EVehicleSignalState::Off;
+	if (Cosine < 0.7f) // turning angle more than 45 degrees
+	{
+		if (Z < 0)
+		{
+			Signal = EVehicleSignalState::Left;
+		}
+		else
+		{
+			Signal = EVehicleSignalState::Right;
+		}
+	}
+	CorrectSignal = Signal;
 }
 
 void ALane::SetupSpline()
@@ -178,9 +206,17 @@ bool ALane::MinimumCurvatureVariation(FVector2D p0, FVector2D p1, FVector2D d0, 
 
 void ALane::LogGeometry()
 {
-	if (MyMonitor == nullptr)
+	if (MyMonitor == nullptr || MyFork == nullptr || MyExit == nullptr)
 	{ return; }
 
+	// Graph connectivity
+	FString EventMessage = "laneFromTo(_"
+		+ GetName() + ", _"
+		+ MyFork->GetName() + ", _"
+		+ MyExit->GetName() + ").";
+	MyMonitor->AddEvent(EventMessage);
+
+	// Lane overlaps
 	TArray<AActor *> OverlappingActors;
 	GetOverlappingActors(OverlappingActors, ALane::StaticClass());
 	for (AActor* OverlappingActor : OverlappingActors)
@@ -193,5 +229,14 @@ void ALane::LogGeometry()
 				+ Lane->GetName() + ").";
 			MyMonitor->AddEvent(EventMessage);
 		}
+	}
+}
+
+void ALane::SetMonitor(AIntersectionMonitor* Monitor)
+{
+	MyMonitor = Monitor;
+	if (MyExit != nullptr)
+	{
+		MyExit->MyMonitor = Monitor;
 	}
 }

@@ -8,6 +8,8 @@
 #include "Components/SplineMeshComponent.h"
 #include "IntersectionExit.h"
 
+// carla
+#include "Vehicle/CarlaWheeledVehicle.h"
 
 // Generated
 #include "Lane.generated.h"
@@ -31,11 +33,24 @@ public:
 	void Init(class AFork* MyFork, AIntersectionExit* MyExit);
 	void SetupSpline();
 	void SetupSplineMeshes();
+	void SetMonitor(AIntersectionMonitor* Monitor);
 
 	UFUNCTION()
 	void OnBeginOverlap(AActor* ThisActor, AActor* OtherActor);
 
 public:
+	UPROPERTY(EditAnywhere)
+	EVehicleSignalState CorrectSignal;
+
+	UPROPERTY(VisibleAnywhere)
+	class AFork* MyFork = nullptr;
+
+	UPROPERTY(VisibleAnywhere)
+	AIntersectionExit* MyExit = nullptr;
+
+	UPROPERTY()
+	AIntersectionMonitor* MyMonitor = nullptr;
+
 	UPROPERTY(EditAnywhere)
 	USplineComponent* Spline = nullptr;
 
@@ -51,12 +66,6 @@ public:
 	UPROPERTY(EditAnywhere)
 	float MaxMeshLength = 1.0f; // in meters
 
-	AIntersectionExit* MyExit = nullptr;
-	class AFork* MyFork = nullptr;
-
-	UPROPERTY()
-	AIntersectionMonitor* MyMonitor = nullptr;
-
 private:
 	bool MinimumCurvatureVariation(
 		FVector2D p0, 
@@ -66,4 +75,5 @@ private:
 		float& OutAlpha0, 
 		float& OutAlpha1);
 	void LogGeometry();
+	void SetTurningDirection();
 };

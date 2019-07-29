@@ -131,8 +131,10 @@ void AFork::AddLane(int32 index)
 		UE_LOG(LogTemp, Warning, TEXT("Attempted to add branch for a null exit!"));
 		return;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("Exits[%d] is set to %s"), index, *(Exits[index]->GetName()));
-	Lanes[index] = GetWorld()->SpawnActor<ALane>();
+	FString LaneName = GetName() + "_to_" + Exits[index]->GetName();
+	FActorSpawnParameters spawnParams;
+	spawnParams.Name = FName(*LaneName);
+	Lanes[index] = GetWorld()->SpawnActor<ALane>(spawnParams);
 	Lanes[index]->Init(this, Exits[index]);
 }
 
@@ -150,6 +152,17 @@ void AFork::RemoveLane(int32 index)
 //	Super::OnConstruction(Transform);
 //
 //	UE_LOG(LogTemp, Warning, TEXT("AFork OnConstruction called!"));
+//}
+
+//void AFork::PostEditMove(bool bFinished)
+//{
+//	Super::PostEditMove(bFinished);
+//
+//	if (bFinished)
+//	{
+//		UE_LOG(LogTemp, Warning, TEXT("AFork PostEditMove called!"));
+//		ConnectToMonitor();
+//	}
 //}
 
 
@@ -193,7 +206,7 @@ void AFork::OnArrival(
 			SignalString = "emergency";
 			break;
 		}
-		EventMessage = "signalsAtForkAtTime(_"
+		EventMessage = "signalsDirectionAtForkAtTime(_"
 			+ OtherActor->GetName() + ", "
 			+ SignalString + ", _"
 			+ GetName() + ", "
@@ -229,5 +242,17 @@ void AFork::OnEntrance(
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in AFork::OnEntrance!"));
+	}
+}
+
+void AFork::SetMonitor(AIntersectionMonitor* Monitor)
+{
+	MyMonitor = Monitor;
+	for (ALane* Lane : Lanes)
+	{
+		if (Lane != nullptr)
+		{
+			Lane->SetMonitor(Monitor);
+		}
 	}
 }
