@@ -58,5 +58,12 @@ public:
 	AIntersectionMonitor* MyMonitor = nullptr;
 
 private:
-	bool MinimumCurvatureVariation(FVector2D p0, FVector2D p1, FVector2D d0, FVector2D d1, float& OutAlpha0, float& OutAlpha1);
+	bool MinimumCurvatureVariation(
+		FVector2D p0, 
+		FVector2D p1, 
+		FVector2D d0, 
+		FVector2D d1, 
+		float& OutAlpha0, 
+		float& OutAlpha1);
+	void LogGeometry();
 };
