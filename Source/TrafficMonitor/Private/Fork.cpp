@@ -2,7 +2,7 @@
 
 
 #include "Fork.h"
-
+#include "Vehicle/CarlaWheeledVehicle.h"
 
 #include "Engine/CollisionProfile.h"
 
@@ -14,14 +14,25 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 		ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this, TEXT("SceneRootComponent"));
 	RootComponent->SetMobility(EComponentMobility::Static);
 
-	EntranceTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerVolume"));
+	EntranceTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("Entrance"));
 	EntranceTriggerVolume->SetupAttachment(RootComponent);
 	EntranceTriggerVolume->SetHiddenInGame(true);
 	EntranceTriggerVolume->SetMobility(EComponentMobility::Static);
 	EntranceTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	EntranceTriggerVolume->SetGenerateOverlapEvents(true);
-	EntranceTriggerVolume->SetBoxExtent(FVector{ 40.0f, 160.0f, 50.0f });
+	EntranceTriggerVolume->SetBoxExtent(FVector{ 50.0f, 150.0f, 50.0f });
 	EntranceTriggerVolume->ShapeColor = FColor(0, 255, 0);
+	EntranceTriggerVolume->SetRelativeLocation(FVector(50.f, 0.f, 0.f));
+
+	ArrivalTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("Arrival"));
+	ArrivalTriggerVolume->SetupAttachment(RootComponent);
+	ArrivalTriggerVolume->SetHiddenInGame(true);
+	ArrivalTriggerVolume->SetMobility(EComponentMobility::Static);
+	ArrivalTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
+	ArrivalTriggerVolume->SetGenerateOverlapEvents(true);
+	ArrivalTriggerVolume->SetBoxExtent(FVector{ 100.0f, 150.0f, 50.0f });
+	ArrivalTriggerVolume->ShapeColor = FColor(0, 0, 255);
+	ArrivalTriggerVolume->SetRelativeLocation(FVector(-100.f, 0.f, 0.f));
 
 	ForwardArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("ForwardArrow"));
 	ForwardArrow->SetupAttachment(RootComponent);
@@ -35,6 +46,10 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 void AFork::BeginPlay()
 {
 	Super::BeginPlay();
+
+	ArrivalTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
+	ArrivalTriggerVolume->SetGenerateOverlapEvents(true);
+	ArrivalTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AFork::OnArrival);
 
 	EntranceTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	EntranceTriggerVolume->SetGenerateOverlapEvents(true);
@@ -138,6 +153,61 @@ void AFork::RemoveLane(int32 index)
 //}
 
 
+void AFork::OnArrival(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex,
+	bool bFromSweep,
+	const FHitResult& SweepResult)
+{
+	if (MyMonitor == nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in AFork::OnEntrance!"));
+		return;
+	}
+	int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
+	FString EventMessage = "arrivesAtForkAtTime(_"
+		+ OtherActor->GetName() + ", _"
+		+ GetName() + ", "
+		+ FString::FromInt(TimeStep) + ").";
+	UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
+	MyMonitor->AddEvent(EventMessage);
+
+	ACarlaWheeledVehicle* OverLappingVehicle = Cast<ACarlaWheeledVehicle>(OtherActor);
+	if (OverLappingVehicle != nullptr)
+	{
+		auto Signal = OverLappingVehicle->Signal;
+		FString SignalString;
+		switch (Signal) {
+		case EVehicleSignalState::Off:
+			SignalString = "off";
+			break;
+		case EVehicleSignalState::Left:
+			SignalString = "left";
+			break;
+		case EVehicleSignalState::Right:
+			SignalString = "right";
+			break;
+		case EVehicleSignalState::Emergency:
+			SignalString = "emergency";
+			break;
+		}
+		EventMessage = "signalsAtForkAtTime(_"
+			+ OtherActor->GetName() + ", "
+			+ SignalString + ", _"
+			+ GetName() + ", "
+			+ FString::FromInt(TimeStep) + ").";
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
+		MyMonitor->AddEvent(EventMessage);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Cast to ACarlaWheeledVehicle failed!"));
+	}
+}
+
+
 void AFork::OnEntrance(
 	UPrimitiveComponent* OverlappedComp,
 	AActor* OtherActor,
@@ -146,25 +216,18 @@ void AFork::OnEntrance(
 	bool bFromSweep,
 	const FHitResult& SweepResult)
 {
-	if (OtherActor != nullptr)
+	if (MyMonitor != nullptr)
 	{
-		if (MyMonitor != nullptr)
-		{
-			int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-			FString EventMessage = "entersFromAtTime(_" 
-				+ OtherActor->GetName() + ", _" 
-				+ GetName() + ", "
-				+ FString::FromInt(TimeStep) + ").";
-			UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
-			MyMonitor->AddEvent(EventMessage);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in AFork::OnEntrance!"));
-		}
+		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
+		FString EventMessage = "entersForkAtTime(_" 
+			+ OtherActor->GetName() + ", _" 
+			+ GetName() + ", "
+			+ FString::FromInt(TimeStep) + ").";
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
+		MyMonitor->AddEvent(EventMessage);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("OtherActor is null in AFork::OnEntrance!"));
+		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in AFork::OnEntrance!"));
 	}
 }

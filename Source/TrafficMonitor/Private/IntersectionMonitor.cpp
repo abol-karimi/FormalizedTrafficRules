@@ -4,11 +4,9 @@
 #include "IntersectionMonitor.h"
 #include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
 #include "Runtime/Core/Public/Misc/Paths.h"
-//#include "Runtime/Core/Public/GenericPlatform/GenericPlatformMath.h"
 
 // Developer
 #include "Fork.h"
-#include "IntersectionArrival.h"
 
 #include <fstream>
 #include <iostream>
@@ -84,22 +82,6 @@ void AIntersectionMonitor::AddToLoggers()
 		{
 			Exit->MyMonitor = this;
 			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Exit->GetName()));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Could not connect: Overlapping actor was null!"));
-		}
-	}
-
-	OverlappingActors.Empty();
-	GetOverlappingActors(OverlappingActors, AIntersectionArrival::StaticClass());
-	for (AActor* Actor : OverlappingActors)
-	{
-		AIntersectionArrival* ExitPtr = Cast<AIntersectionArrival>(Actor);
-		if (ExitPtr != nullptr)
-		{
-			ExitPtr->MyMonitor = this;
-			UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(ExitPtr->GetName()));
 		}
 		else
 		{

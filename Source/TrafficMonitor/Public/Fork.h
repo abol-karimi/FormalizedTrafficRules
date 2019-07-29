@@ -46,11 +46,24 @@ public:
 			int32 OtherBodyIndex,
 			bool bFromSweep,
 			const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnArrival(
+			UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult& SweepResult);
+
 public:	
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* EntranceTriggerVolume;
 
 	UPROPERTY(EditAnywhere)
+	UBoxComponent* ArrivalTriggerVolume;
+	
+	UPROPERTY()
 	UArrowComponent* ForwardArrow;
 
 	UPROPERTY(EditAnywhere, meta=(NoElementDuplicate))
