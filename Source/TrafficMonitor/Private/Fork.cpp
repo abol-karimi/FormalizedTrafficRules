@@ -190,22 +190,7 @@ void AFork::OnArrival(
 	ACarlaWheeledVehicle* OverLappingVehicle = Cast<ACarlaWheeledVehicle>(OtherActor);
 	if (OverLappingVehicle != nullptr)
 	{
-		auto Signal = OverLappingVehicle->Signal;
-		FString SignalString;
-		switch (Signal) {
-		case EVehicleSignalState::Off:
-			SignalString = "off";
-			break;
-		case EVehicleSignalState::Left:
-			SignalString = "left";
-			break;
-		case EVehicleSignalState::Right:
-			SignalString = "right";
-			break;
-		case EVehicleSignalState::Emergency:
-			SignalString = "emergency";
-			break;
-		}
+		FString SignalString = OverLappingVehicle->GetSignalString();
 		EventMessage = "signalsDirectionAtForkAtTime(_"
 			+ OtherActor->GetName() + ", "
 			+ SignalString + ", _"
@@ -263,7 +248,7 @@ bool AFork::IsToTheRightOf(const AFork* OtherFork) const
 	auto Ego = FVector2D(GetActorForwardVector());
 	auto Other = FVector2D(OtherFork->GetActorForwardVector());
 	float Sine = FVector2D::CrossProduct(Ego, Other); // Ego and Other are unit vectors
-	if (Sine > 0.5f) // angle in (30, 150)
+	if (Sine > 0.5f) // angle in (30, 150) degrees
 	{
 		return true;
 	}
