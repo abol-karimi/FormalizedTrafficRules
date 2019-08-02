@@ -18,10 +18,24 @@ public class TrafficMonitor : ModuleRules
 		PrivateIncludePaths.AddRange(
 			new string[] {
 				// ... add other private include paths required here ...
-
+				"C:/Users/ak/Downloads/clingo/libclingo"
 			}
 			);
 
+    PublicSystemIncludePaths.AddRange(
+		new string[] {
+			// ... add other private include paths required here ...
+			//"C:/Users/ak/Downloads/clingo/libclingo"
+		}
+		);
+		PublicLibraryPaths.AddRange(
+		new string[] {
+			// List of system/library paths (directory of .lib files)
+			//"C:/Users/ak/Downloads/clingo-Build/lib/Debug"
+		}
+		);
+
+    PublicAdditionalLibraries.Add(@"C:/Users/ak/Downloads/clingo-Build/lib/Debug/import_clingo.lib");
 
 		PublicDependencyModuleNames.AddRange(
 			new string[]

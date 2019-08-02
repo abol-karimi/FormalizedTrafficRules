@@ -29,7 +29,7 @@ ALane::ALane(const FObjectInitializer &ObjectInitializer)
 	(TEXT("Material'/TrafficMonitor/TransparentBlue.TransparentBlue'"));
 	Material = MaterialFinder.Object;
 
-	UE_LOG(LogTemp, Warning, TEXT("Lane constructor: number of spline points: %d"), Spline->GetNumberOfSplinePoints());
+	//UE_LOG(LogTemp, Warning, TEXT("Lane constructor: number of spline points: %d"), Spline->GetNumberOfSplinePoints());
 }
 
 void ALane::OnConstruction(const FTransform &Transform)
@@ -176,7 +176,7 @@ void ALane::BeginPlay()
 
 void ALane::OnBeginOverlap(AActor* ThisActor, AActor* OtherActor)
 {
-	FString EventMessage = "enters(_"
+	FString EventMessage = "entersLane(_"
 		+ OtherActor->GetName() + ", _" 
 		+ ThisActor->GetName() + ").";
 	UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));

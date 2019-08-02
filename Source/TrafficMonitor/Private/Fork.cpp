@@ -176,7 +176,7 @@ void AFork::OnArrival(
 {
 	if (MyMonitor == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in AFork::OnEntrance!"));
+		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnArrival!"), *(GetName()));
 		return;
 	}
 	int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
@@ -241,7 +241,7 @@ void AFork::OnEntrance(
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in AFork::OnEntrance!"));
+		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnEntrance!"), *(GetName()));
 	}
 }
 

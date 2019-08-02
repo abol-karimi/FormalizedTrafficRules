@@ -43,24 +43,17 @@ void AIntersectionExit::OnExit(
 	UPrimitiveComponent* OtherComp,
 	int32 OtherBodyIndex)
 {
-	if (OtherActor != nullptr)
+	if (MyMonitor != nullptr)
 	{
-		if (MyMonitor != nullptr)
-		{
-			int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-			FString EventMessage = "exitsIntersectionAtTime(_" 
-				+ OtherActor->GetFName().ToString() + ", " 
-				+ FString::FromInt(TimeStep) + ").";
-			UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
-			MyMonitor->AddEvent(EventMessage);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in AFork::OnEntrance!"));
-		}
+		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
+		FString EventMessage = "exitsIntersectionAtTime(_" 
+			+ OtherActor->GetFName().ToString() + ", " 
+			+ FString::FromInt(TimeStep) + ").";
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
+		MyMonitor->AddEvent(EventMessage);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("OtherActor is null in AIntersectionExit::OnExit!"));
+		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnExit!"), *(GetName()));
 	}
 }

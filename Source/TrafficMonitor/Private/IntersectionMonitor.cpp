@@ -5,6 +5,20 @@
 #include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
 #include "Runtime/Core/Public/Misc/Paths.h"
 
+
+THIRD_PARTY_INCLUDES_START
+
+#pragma push_macro("check")
+
+#undef check
+
+#include <clingo.hh>
+
+#pragma pop_macro("check")
+
+THIRD_PARTY_INCLUDES_END
+
+
 // Developer
 #include "Fork.h"
 
@@ -52,6 +66,27 @@ void AIntersectionMonitor::BeginPlay()
 	AddToLoggers();
 
 	LogGeometry();
+
+	try {
+		Clingo::Logger logger = [](Clingo::WarningCode, char const *message) {
+			UE_LOG(LogTemp, Warning, TEXT("Clingo logger message: %s"), message);
+		};
+	
+		Clingo::Control ctl{ {}, logger, 20 };		
+		ctl.add("base", {}, "a :- not b. b :- not a.");
+		ctl.ground({ {"base", {}} });
+		auto solveHandle = ctl.solve();
+		for (auto &m : solveHandle) {
+			for (auto &atom : m.symbols()) {
+				FString AtomString(atom.to_string().c_str());
+				UE_LOG(LogTemp, Warning, TEXT("Clingo: Model: %s"), *AtomString);
+			}
+		}
+	}
+	catch (std::exception const &e) {
+		UE_LOG(LogTemp, Warning, TEXT("Clingo failed with: %s"), e.what());
+	}
+
 }
 
 
@@ -98,6 +133,7 @@ void AIntersectionMonitor::AddEvent(FString EventMessage)
 	// Close the file stream explicitly
 	LogFile.close();
 }
+
 
 void AIntersectionMonitor::LogGeometry()
 {
