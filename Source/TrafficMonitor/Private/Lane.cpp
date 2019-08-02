@@ -170,8 +170,6 @@ void ALane::BeginPlay()
 	Super::BeginPlay();
 	
 	OnActorBeginOverlap.AddDynamic(this, &ALane::OnBeginOverlap);
-
-	LogGeometry();
 }
 
 void ALane::OnBeginOverlap(AActor* ThisActor, AActor* OtherActor)
@@ -204,33 +202,6 @@ bool ALane::MinimumCurvatureVariation(FVector2D p0, FVector2D p1, FVector2D d0, 
 	return false;
 }
 
-void ALane::LogGeometry()
-{
-	if (MyMonitor == nullptr || MyFork == nullptr || MyExit == nullptr)
-	{ return; }
-
-	// Graph connectivity
-	FString EventMessage = "laneFromTo(_"
-		+ GetName() + ", _"
-		+ MyFork->GetName() + ", _"
-		+ MyExit->GetName() + ").";
-	MyMonitor->AddEvent(EventMessage);
-
-	// Lane overlaps
-	TArray<AActor *> OverlappingActors;
-	GetOverlappingActors(OverlappingActors, ALane::StaticClass());
-	for (AActor* OverlappingActor : OverlappingActors)
-	{
-		ALane* Lane = Cast<ALane>(OverlappingActor);
-		if (Lane != nullptr)
-		{
-			FString EventMessage = "overlaps(_"
-				+ GetName() + ", _"
-				+ Lane->GetName() + ").";
-			MyMonitor->AddEvent(EventMessage);
-		}
-	}
-}
 
 void ALane::SetMonitor(AIntersectionMonitor* Monitor)
 {

@@ -137,8 +137,9 @@ void AIntersectionMonitor::AddEvent(FString EventMessage)
 
 void AIntersectionMonitor::LogGeometry()
 {
+	// Get a list of Forks
 	TArray<AActor *> OverlappingActors;
-	GetOverlappingActors(OverlappingActors, AFork::StaticClass());
+	GetOverlappingActors(OverlappingActors);
 	TArray<AFork *> Forks;
 	for (AActor* OverlappingActor : OverlappingActors)
 	{
@@ -149,30 +150,67 @@ void AIntersectionMonitor::LogGeometry()
 		}
 	}
 
-	// Formalization of "isToTheRightOf()" based on approaching angles
+	// "isToTheRightOf()" facts
 	for (int i = 0; i < Forks.Num(); i++)
 	{
 		for (int j = i + 1; j < Forks.Num(); j++)
 		{
-			auto Ego = FVector2D(Forks[i]->GetActorForwardVector());
-			auto Other = FVector2D(Forks[j]->GetActorForwardVector());
-			float Sine = FVector2D::CrossProduct(Ego, Other);
-			if (Sine > 0.5f) // angle in (30, 150)
+			if (Forks[i]->IsToTheRightOf(Forks[j])) // angle in (30, 150)
 			{
 				FString EventMessage = "isToTheRightOf(_"
 					+ Forks[i]->GetName() + ", _"
 					+ Forks[j]->GetName() + ").";
 				AddEvent(EventMessage);
-				UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 			}
-			else if (Sine < -0.5f) // angle in (-150, -30)
+			else if (Forks[j]->IsToTheRightOf(Forks[i])) // angle in (-150, -30)
 			{
 				FString EventMessage = "isToTheRightOf(_"
 					+ Forks[j]->GetName() + ", _"
 					+ Forks[i]->GetName() + ").";
 				AddEvent(EventMessage);
-				UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 			}
 		}
 	}
+
+	// Get a list of Lanes
+	TArray<ALane *> Lanes;
+	for (AActor* OverlappingActor : OverlappingActors)
+	{
+		ALane* Lane = Cast<ALane>(OverlappingActor);
+		if (Lane != nullptr)
+		{
+			Lanes.Add(Lane);
+		}
+	}
+
+	// Graph connectivity
+	for (ALane* Lane : Lanes)
+	{
+		FString EventMessage = "laneFromTo(_"
+			+ Lane->GetName() + ", _"
+			+ Lane->MyFork->GetName() + ", _"
+			+ Lane->MyExit->GetName() + ").";
+		AddEvent(EventMessage);
+	}
+
+	// Lane overlaps
+	for (int i = 0; i < Lanes.Num(); i++)
+	{
+		for (int j = i + 1; j < Lanes.Num(); j++)
+		{
+			if (Lanes[i]->IsOverlappingActor(Lanes[j]))
+			{
+				FString EventMessage = "overlaps(_"
+					+ Lanes[i]->GetName() + ", _"
+					+ Lanes[j]->GetName() + ").";
+				AddEvent(EventMessage);
+				EventMessage = "overlaps(_"
+					+ Lanes[j]->GetName() + ", _"
+					+ Lanes[i]->GetName() + ").";
+				AddEvent(EventMessage);
+			}
+		}
+	}
+
+
 }

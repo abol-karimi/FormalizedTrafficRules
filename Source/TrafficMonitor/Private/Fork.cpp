@@ -256,3 +256,19 @@ void AFork::SetMonitor(AIntersectionMonitor* Monitor)
 		}
 	}
 }
+
+/// Formalization of "isToTheRightOf()" based on approaching angles of forks
+bool AFork::IsToTheRightOf(const AFork* OtherFork) const
+{
+	auto Ego = FVector2D(GetActorForwardVector());
+	auto Other = FVector2D(OtherFork->GetActorForwardVector());
+	float Sine = FVector2D::CrossProduct(Ego, Other); // Ego and Other are unit vectors
+	if (Sine > 0.5f) // angle in (30, 150)
+	{
+		return true;
+	}
+	// if Sine < -0.5 then IsToTheLeftOf(OtherFork)
+	// if Sine in [-0.5, 0.5] and Cosine > 0 then heading the same direction
+	// if Sine in [-0.5, 0.5] and Cosine < 0 then heading the opposite direction
+	return false;
+}

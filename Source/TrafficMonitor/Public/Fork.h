@@ -40,6 +40,7 @@ public:
 	void AddLane(int32 index);
 	void RemoveLane(int32 index);
 	void SetMonitor(AIntersectionMonitor* Monitor);
+	bool IsToTheRightOf(const AFork* OtherFork) const;
 
 	UFUNCTION()
 	void OnEntrance(
