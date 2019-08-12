@@ -169,18 +169,48 @@ void ALane::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	//SetCollisionProfileName(FName("OverlapAll"));
+	//SetGenerateOverlapEvents(true);
 	OnActorBeginOverlap.AddDynamic(this, &ALane::OnBeginOverlap);
+	OnActorEndOverlap.AddDynamic(this, &ALane::OnEndOverlap);
 }
 
 void ALane::OnBeginOverlap(AActor* ThisActor, AActor* OtherActor)
 {
-	FString EventMessage = "entersLane(_"
-		+ OtherActor->GetName() + ", _" 
-		+ ThisActor->GetName() + ").";
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
 	if (MyMonitor != nullptr)
 	{
-		MyMonitor->AddEvent(EventMessage);
+		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
+		FString EnteringActorName = OtherActor->GetName().ToLower();
+		FString Atom = "entersLaneAtTime("
+			+ EnteringActorName + ", "
+			+ GetName().ToLower() + ", "
+			+ FString::FromInt(TimeStep) + ").";
+		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
+		MyMonitor->AddEvent(EnteringActorName, Atom, TimeStep);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnBeginOverlap!"), *(GetName()));
+	}
+}
+
+
+void ALane::OnEndOverlap(AActor* ThisActor, AActor* OtherActor)
+{
+	if (MyMonitor != nullptr)
+	{
+		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
+		FString EnteringActorName = OtherActor->GetName().ToLower();
+		FString Atom = "leavesLaneAtTime("
+			+ EnteringActorName + ", "
+			+ GetName().ToLower() + ", "
+			+ FString::FromInt(TimeStep) + ").";
+		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
+		MyMonitor->AddEvent(EnteringActorName, Atom, TimeStep);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnEndOverlap!"), *(GetName()));
 	}
 }
 

@@ -24,7 +24,27 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void AddEvent(FString EventMessage);
+	void LogEvent(FString EventMessage);
+	void AddEvent(FString Actor, FString Atom, uint32 TimeStep);
+	void AddExitEvent(FString Actor, FString Atom, uint32 TimeStep);
+
+	UFUNCTION()
+	void OnArrival(
+			UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnEntrance(
+			UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex,
+			bool bFromSweep,
+			const FHitResult& SweepResult);
 
 public:
 	UPROPERTY()
@@ -39,7 +59,13 @@ private:
 	void CreateLogFile();
 	void AddToLoggers();
 	void LogGeometry();
+	void RecordGeometry();
+	void Solve();
 
 	FString FileName;
 	FString AbsoluteFilePath;
+	size_t NumberOfForks;
+	TMultiMap<FString, FString> EventMap;
+	FString Geometry;
+
 };

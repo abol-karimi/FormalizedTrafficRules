@@ -13,7 +13,7 @@ AIntersectionExit::AIntersectionExit(const FObjectInitializer &ObjectInitializer
 
 	TriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerVolume"));
 	TriggerVolume->SetupAttachment(RootComponent);
-	TriggerVolume->SetHiddenInGame(true);
+	TriggerVolume->SetHiddenInGame(false);
 	TriggerVolume->SetMobility(EComponentMobility::Static);
 	TriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	TriggerVolume->SetGenerateOverlapEvents(true);
@@ -45,12 +45,13 @@ void AIntersectionExit::OnExit(
 {
 	if (MyMonitor != nullptr)
 	{
-		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-		FString EventMessage = "exitsIntersectionAtTime(_" 
-			+ OtherActor->GetFName().ToString() + ", " 
+		uint32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
+		FString ArrivingActorName = OtherActor->GetName().ToLower();
+		FString Atom = "exitsIntersectionAtTime(" 
+			+ ArrivingActorName + ", "
 			+ FString::FromInt(TimeStep) + ").";
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
-		MyMonitor->AddEvent(EventMessage);
+		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
+		MyMonitor->AddExitEvent(ArrivingActorName, Atom, TimeStep);
 	}
 	else
 	{

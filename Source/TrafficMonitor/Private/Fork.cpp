@@ -16,7 +16,7 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 
 	EntranceTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("Entrance"));
 	EntranceTriggerVolume->SetupAttachment(RootComponent);
-	EntranceTriggerVolume->SetHiddenInGame(true);
+	EntranceTriggerVolume->SetHiddenInGame(false);
 	EntranceTriggerVolume->SetMobility(EComponentMobility::Static);
 	EntranceTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	EntranceTriggerVolume->SetGenerateOverlapEvents(true);
@@ -26,13 +26,13 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 
 	ArrivalTriggerVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("Arrival"));
 	ArrivalTriggerVolume->SetupAttachment(RootComponent);
-	ArrivalTriggerVolume->SetHiddenInGame(true);
+	ArrivalTriggerVolume->SetHiddenInGame(false);
 	ArrivalTriggerVolume->SetMobility(EComponentMobility::Static);
 	ArrivalTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	ArrivalTriggerVolume->SetGenerateOverlapEvents(true);
-	ArrivalTriggerVolume->SetBoxExtent(FVector{ 100.0f, 150.0f, 50.0f });
 	ArrivalTriggerVolume->ShapeColor = FColor(0, 0, 255);
-	ArrivalTriggerVolume->SetRelativeLocation(FVector(-100.f, 0.f, 0.f));
+	ArrivalTriggerVolume->SetBoxExtent(FVector{ 150.0f, 150.0f, 50.0f });
+	ArrivalTriggerVolume->SetRelativeLocation(FVector(-150.f, 0.f, 0.f));
 
 	ForwardArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("ForwardArrow"));
 	ForwardArrow->SetupAttachment(RootComponent);
@@ -49,11 +49,9 @@ void AFork::BeginPlay()
 
 	ArrivalTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	ArrivalTriggerVolume->SetGenerateOverlapEvents(true);
-	ArrivalTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AFork::OnArrival);
 
 	EntranceTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	EntranceTriggerVolume->SetGenerateOverlapEvents(true);
-	EntranceTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AFork::OnEntrance);
 }
 
 
@@ -165,82 +163,6 @@ void AFork::RemoveLane(int32 index)
 //	}
 //}
 
-
-void AFork::OnArrival(
-	UPrimitiveComponent* OverlappedComp,
-	AActor* OtherActor,
-	UPrimitiveComponent* OtherComp,
-	int32 OtherBodyIndex,
-	bool bFromSweep,
-	const FHitResult& SweepResult)
-{
-	if (MyMonitor == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnArrival!"), *(GetName()));
-		return;
-	}
-	int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-	FString EventMessage = "arrivesAtForkAtTime(_"
-		+ OtherActor->GetName() + ", _"
-		+ GetName() + ", "
-		+ FString::FromInt(TimeStep) + ").";
-	UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
-	MyMonitor->AddEvent(EventMessage);
-
-	ACarlaWheeledVehicle* OverLappingVehicle = Cast<ACarlaWheeledVehicle>(OtherActor);
-	if (OverLappingVehicle != nullptr)
-	{
-		FString SignalString = OverLappingVehicle->GetSignalString();
-		EventMessage = "signalsDirectionAtForkAtTime(_"
-			+ OtherActor->GetName() + ", "
-			+ SignalString + ", _"
-			+ GetName() + ", "
-			+ FString::FromInt(TimeStep) + ").";
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
-		MyMonitor->AddEvent(EventMessage);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Cast to ACarlaWheeledVehicle failed!"));
-	}
-}
-
-
-void AFork::OnEntrance(
-	UPrimitiveComponent* OverlappedComp,
-	AActor* OtherActor,
-	UPrimitiveComponent* OtherComp,
-	int32 OtherBodyIndex,
-	bool bFromSweep,
-	const FHitResult& SweepResult)
-{
-	if (MyMonitor != nullptr)
-	{
-		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-		FString EventMessage = "entersForkAtTime(_" 
-			+ OtherActor->GetName() + ", _" 
-			+ GetName() + ", "
-			+ FString::FromInt(TimeStep) + ").";
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *(EventMessage));
-		MyMonitor->AddEvent(EventMessage);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnEntrance!"), *(GetName()));
-	}
-}
-
-void AFork::SetMonitor(AIntersectionMonitor* Monitor)
-{
-	MyMonitor = Monitor;
-	for (ALane* Lane : Lanes)
-	{
-		if (Lane != nullptr)
-		{
-			Lane->SetMonitor(Monitor);
-		}
-	}
-}
 
 /// Formalization of "isToTheRightOf()" based on approaching angles of forks
 bool AFork::IsToTheRightOf(const AFork* OtherFork) const

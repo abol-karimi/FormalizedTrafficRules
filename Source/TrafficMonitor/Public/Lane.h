@@ -38,6 +38,9 @@ public:
 	UFUNCTION()
 	void OnBeginOverlap(AActor* ThisActor, AActor* OtherActor);
 
+	UFUNCTION()
+	void OnEndOverlap(AActor* ThisActor, AActor* OtherActor);
+
 public:
 	UPROPERTY(EditAnywhere)
 	EVehicleSignalState CorrectSignal;

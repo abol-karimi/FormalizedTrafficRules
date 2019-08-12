@@ -39,26 +39,7 @@ protected:
 public:
 	void AddLane(int32 index);
 	void RemoveLane(int32 index);
-	void SetMonitor(AIntersectionMonitor* Monitor);
 	bool IsToTheRightOf(const AFork* OtherFork) const;
-
-	UFUNCTION()
-	void OnEntrance(
-			UPrimitiveComponent* OverlappedComp,
-			AActor* OtherActor,
-			UPrimitiveComponent* OtherComp,
-			int32 OtherBodyIndex,
-			bool bFromSweep,
-			const FHitResult& SweepResult);
-
-	UFUNCTION()
-	void OnArrival(
-			UPrimitiveComponent* OverlappedComp,
-			AActor* OtherActor,
-			UPrimitiveComponent* OtherComp,
-			int32 OtherBodyIndex,
-			bool bFromSweep,
-			const FHitResult& SweepResult);
 
 public:	
 	UPROPERTY(EditAnywhere)
@@ -78,7 +59,4 @@ public:
 
 	UPROPERTY()
 	AIntersectionMonitor* MyMonitor;
-
-private:
-
 };
