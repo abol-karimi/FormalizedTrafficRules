@@ -5,6 +5,9 @@
 #include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
 #include "Runtime/Core/Public/Misc/Paths.h"
 
+#include "Vehicle/WheeledVehicleAIController.h"
+
+
 THIRD_PARTY_INCLUDES_START
 
 #pragma push_macro("check")
@@ -62,14 +65,16 @@ void AIntersectionMonitor::BeginPlay()
 
 	CreateLogFile();
 
-	AddToLoggers();
+	SetupTriggers();
 
 	RecordGeometry();
 }
 
 
-void AIntersectionMonitor::AddToLoggers()
+void AIntersectionMonitor::SetupTriggers()
 {
+	ExtentBox->OnComponentEndOverlap.AddDynamic(this, &AIntersectionMonitor::OnExitMonitor);
+
 	TArray<AActor *> OverlappingActors;
 	GetOverlappingActors(OverlappingActors, AFork::StaticClass());
 	for (AActor* Actor : OverlappingActors)
@@ -214,20 +219,22 @@ void AIntersectionMonitor::RecordGeometry()
 	{
 		for (size_t j = i + 1; j < NumberOfForks; j++)
 		{
+			FString LeftFork = "f_";
+			FString RightFork = "f_";
 			if (Forks[i]->IsToTheRightOf(Forks[j])) // angle in (30, 150)
 			{
-				FString FactString = "isToTheRightOf("
-					+ Forks[i]->GetName().ToLower() + ", "
-					+ Forks[j]->GetName().ToLower() + ").";
-				Geometry += FactString + "\n";
+				LeftFork += Forks[j]->GetName();
+				RightFork += Forks[i]->GetName();
 			}
 			else if (Forks[j]->IsToTheRightOf(Forks[i])) // angle in (-150, -30)
 			{
-				FString FactString = "isToTheRightOf("
-					+ Forks[j]->GetName().ToLower() + ", "
-					+ Forks[i]->GetName().ToLower() + ").";
-				Geometry += FactString + "\n";
+				LeftFork += Forks[i]->GetName();
+				RightFork += Forks[j]->GetName();
 			}
+			FString FactString = "isToTheRightOf("
+				+ RightFork + ", "
+				+ LeftFork + ").";
+			Geometry += FactString + "\n";
 		}
 	}
 
@@ -276,14 +283,13 @@ void AIntersectionMonitor::RecordGeometry()
 void AIntersectionMonitor::AddEvent(FString Actor, FString Atom, uint32 TimeStep)
 {
 	// TODO: Use TimeStep to buffer concurrent events
-	EventMap.Add(Actor, Atom);
-	Solve();	
+	ActorToEventsMap.Add(Actor, Atom);	
 }
 
 
 void AIntersectionMonitor::AddExitEvent(FString Actor, FString Atom, uint32 TimeStep)
 {
-	EventMap.Remove(Actor);
+	ActorToEventsMap.Remove(Actor);
 	Solve();
 }
 
@@ -295,6 +301,7 @@ void AIntersectionMonitor::LogEvent(FString EventMessage)
 	LogFile.close();
 }
 
+
 void AIntersectionMonitor::OnArrival(
 	UPrimitiveComponent* OverlappedComp,
 	AActor* OtherActor,
@@ -304,30 +311,32 @@ void AIntersectionMonitor::OnArrival(
 	const FHitResult& SweepResult)
 {
 	int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / TimeResolution);
-	FString ArrivingActorName = OtherActor->GetName().ToLower();
-	FString Atom = "arrivesAtForkAtTime("
-		+ ArrivingActorName + ", "
-		+ GetName().ToLower() + ", "
+	FString ArrivingVehicleID = "v_" + OtherActor->GetName();
+	FString Fork = "f_" + OverlappedComp->GetOwner()->GetName();
+	FString EventAtom = "arrivesAtForkAtTime("
+		+ ArrivingVehicleID + ", "
+		+ Fork + ", "
 		+ FString::FromInt(TimeStep) + ").";
-	//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
-	AddEvent(ArrivingActorName, Atom, TimeStep);
+	ActorToEventsMap.Add(OtherActor->GetName(), EventAtom);
 
-	ACarlaWheeledVehicle* OverLappingVehicle = Cast<ACarlaWheeledVehicle>(OtherActor);
-	if (OverLappingVehicle != nullptr)
+	ACarlaWheeledVehicle* ArrivingVehicle = Cast<ACarlaWheeledVehicle>(OtherActor);
+	if (ArrivingVehicle != nullptr)
 	{
-		FString SignalString = OverLappingVehicle->GetSignalString();
-		Atom = "signalsDirectionAtForkAtTime("
-			+ ArrivingActorName + ", "
+		FString SignalString = ArrivingVehicle->GetSignalString();
+		EventAtom = "signalsDirectionAtForkAtTime("
+			+ ArrivingVehicleID + ", "
 			+ SignalString + ", "
-			+ GetName().ToLower() + ", "
+			+ Fork + ", "
 			+ FString::FromInt(TimeStep) + ").";
-		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
-		AddEvent(ArrivingActorName, Atom, TimeStep);
+		ActorToEventsMap.Add(OtherActor->GetName(), EventAtom);
+		VehiclePointers.Add(OtherActor->GetName(), ArrivingVehicle); // TODO: remove pointer in OnExit
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Cast to ACarlaWheeledVehicle failed!"));
 	}
+
+	Solve();
 }
 
 
@@ -340,13 +349,26 @@ void AIntersectionMonitor::OnEntrance(
 	const FHitResult& SweepResult)
 {
 	uint32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / TimeResolution);
-	FString ArrivingActorName = OtherActor->GetName().ToLower();
+	FString EnteringVehicle = "v_" + OtherActor->GetName();
+	FString Fork = "f_" + OverlappedComp->GetOwner()->GetName();
 	FString Atom = "entersForkAtTime("
-		+ ArrivingActorName + ", "
-		+ GetName().ToLower() + ", "
+		+ EnteringVehicle + ", "
+		+ Fork + ", "
 		+ FString::FromInt(TimeStep) + ").";
-	//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
-	AddEvent(ArrivingActorName, Atom, TimeStep);
+
+	ActorToEventsMap.Add(OtherActor->GetName(), Atom);
+	Solve();
+}
+
+
+void AIntersectionMonitor::OnExitMonitor(
+	UPrimitiveComponent* OverlappedComp,
+	AActor* OtherActor,
+	UPrimitiveComponent* OtherComp,
+	int32 OtherBodyIndex)
+{
+	ActorToEventsMap.Remove(OtherActor->GetName());
+	Solve();
 }
 
 
@@ -362,7 +384,7 @@ void AIntersectionMonitor::Solve()
 		char* GeometryString = TCHAR_TO_UTF8(*Geometry);
 		ctl.add("base", {}, GeometryString);
 
-		for (auto& Pair : EventMap)
+		for (auto& Pair : ActorToEventsMap)
 		{
 			char* Atom = TCHAR_TO_UTF8(*Pair.Value);
 			//UE_LOG(LogTemp, Warning, TEXT("Adding to the program: %s"), *Pair.Value);
@@ -374,9 +396,37 @@ void AIntersectionMonitor::Solve()
 
 		ctl.ground({ {"base", {}} });
 		auto solveHandle = ctl.solve();
-		for (auto &m : solveHandle) {
+		for (auto &model : solveHandle) {
 			FString Model;
-			for (auto &atom : m.symbols()) {
+			for (auto &atom : model.symbols()) {
+				if (atom.match("mustYieldToForRule", 3))
+				{
+					FString YieldingVehicleName = FString(atom.arguments()[0].name()).RightChop(2);
+					ACarlaWheeledVehicle* YieldingVehicle = VehiclePointers[YieldingVehicleName];
+					AWheeledVehicleAIController* Controller = Cast<AWheeledVehicleAIController>(YieldingVehicle->GetController());
+					if (Controller != nullptr)
+					{
+						Controller->SetTrafficLightState(ETrafficLightState::Red);
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("%s's controller not found! (mustYield)"), *YieldingVehicleName);
+					}
+				}
+				else if (atom.match("hasRightOfWay", 1))
+				{
+					FString VehicleName = FString(atom.arguments()[0].name()).RightChop(2);
+					ACarlaWheeledVehicle* Vehicle = VehiclePointers[VehicleName];
+					AWheeledVehicleAIController* Controller = Cast<AWheeledVehicleAIController>(Vehicle->GetController());
+					if (Controller != nullptr)
+					{
+						Controller->SetTrafficLightState(ETrafficLightState::Green);
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("%s's controller not found! (hasRightOfWay)"), *VehicleName);
+					}					
+				}
 				FString AtomString(atom.to_string().c_str());
 				Model.Append("\t" + AtomString + "\n");
 			}

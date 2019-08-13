@@ -31,8 +31,8 @@ AFork::AFork(const FObjectInitializer &ObjectInitializer)
 	ArrivalTriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	ArrivalTriggerVolume->SetGenerateOverlapEvents(true);
 	ArrivalTriggerVolume->ShapeColor = FColor(0, 0, 255);
-	ArrivalTriggerVolume->SetBoxExtent(FVector{ 150.0f, 150.0f, 50.0f });
-	ArrivalTriggerVolume->SetRelativeLocation(FVector(-150.f, 0.f, 0.f));
+	ArrivalTriggerVolume->SetBoxExtent(FVector{ 180.0f, 150.0f, 50.0f });
+	ArrivalTriggerVolume->SetRelativeLocation(FVector(-180.f, 0.f, 0.f));
 
 	ForwardArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("ForwardArrow"));
 	ForwardArrow->SetupAttachment(RootComponent);

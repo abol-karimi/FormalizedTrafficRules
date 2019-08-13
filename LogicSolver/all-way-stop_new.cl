@@ -3,6 +3,10 @@ atTheIntersection(Vehicle):-
   arrivesAtForkAtTime(Vehicle, _, _),
   not entersForkAtTime(Vehicle, _, _).
 
+isAtFork(Vehicle, Fork):-
+  arrivesAtForkAtTime(Vehicle, Fork, Time),
+  atTheIntersection(Vehicle).
+
 arrivedEarlierThan(Vehicle1, Vehicle2):-
   arrivesAtForkAtTime(Vehicle1, _, ArrivalTime1),
   arrivesAtForkAtTime(Vehicle2, _, ArrivalTime2),
@@ -11,6 +15,18 @@ arrivedEarlierThan(Vehicle1, Vehicle2):-
 arrivedSameTime(Vehicle1, Vehicle2):-
   arrivesAtForkAtTime(Vehicle1, _, ArrivalTime),
   arrivesAtForkAtTime(Vehicle2, _, ArrivalTime).
+
+isToTheRightOf(Vehicle1, Vehicle2):-
+  isAtFork(Vehicle1, Fork1),
+  isAtFork(Vehicle2, Fork2),
+  isToTheRightOf(Fork1, Fork2).
+
+insideTheIntersection(Vehicle):-
+  entersForkAtTime(Vehicle, _, _).
+
+insideIsEmpty:-
+  not insideTheIntersection(_).
+
 %---------------- Rules ---------------
 % Page 35:
 % When there are “STOP” signs at all corners,
@@ -30,4 +46,19 @@ mustYieldToForRule(Vehicle1, Vehicle2, yieldToRight):-
   arrivedSameTime(Vehicle1, Vehicle2),
   isToTheRightOf(Vehicle2, Vehicle1).
 
+mustYieldToForRule(Vehicle1, Vehicle2, yieldToInside):-
+  atTheIntersection(Vehicle1),
+  insideTheIntersection(Vehicle2).
+
+%-------------------------------------------------
+mustYield(Vehicle):-
+  mustYieldToForRule(Vehicle, _, _).
+
+hasRightOfWay(Vehicle):-
+  arrivesAtForkAtTime(Vehicle, _, _),
+  not mustYield(Vehicle).
+
 #show mustYieldToForRule/3.
+#show hasRightOfWay/1.
+#show atTheIntersection/1.
+#show arrivesAtForkAtTime/3.

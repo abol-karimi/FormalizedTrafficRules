@@ -46,6 +46,13 @@ public:
 			bool bFromSweep,
 			const FHitResult& SweepResult);
 
+	UFUNCTION()
+	void OnExitMonitor(
+			UPrimitiveComponent* OverlappedComp,
+			AActor* OtherActor,
+			UPrimitiveComponent* OtherComp,
+			int32 OtherBodyIndex);
+
 public:
 	UPROPERTY()
 	UBillboardComponent* Billboard;
@@ -53,11 +60,11 @@ public:
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* ExtentBox;
 
-	float TimeResolution = 0.5f;
+	float TimeResolution = 0.5f; // Events occuring in the same 0.5 seconds interval are simultaneous
 
 private:
 	void CreateLogFile();
-	void AddToLoggers();
+	void SetupTriggers();
 	void LogGeometry();
 	void RecordGeometry();
 	void Solve();
@@ -65,7 +72,7 @@ private:
 	FString FileName;
 	FString AbsoluteFilePath;
 	size_t NumberOfForks;
-	TMultiMap<FString, FString> EventMap;
+	TMultiMap<FString, FString> ActorToEventsMap;
 	FString Geometry;
-
+	TMap<FString, class ACarlaWheeledVehicle*> VehiclePointers;
 };

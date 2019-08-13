@@ -190,7 +190,7 @@ void ALane::OnBeginOverlap(AActor* ThisActor, AActor* OtherActor)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnBeginOverlap!"), *(GetName()));
+		//UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnBeginOverlap!"), *(GetName()));
 	}
 }
 
@@ -210,7 +210,7 @@ void ALane::OnEndOverlap(AActor* ThisActor, AActor* OtherActor)
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnEndOverlap!"), *(GetName()));
+		//UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnEndOverlap!"), *(GetName()));
 	}
 }
 
