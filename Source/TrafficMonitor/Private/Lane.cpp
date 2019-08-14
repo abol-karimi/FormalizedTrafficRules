@@ -43,18 +43,12 @@ void ALane::Init(AFork* MyFork, AIntersectionExit* MyExit)
 {
 	this->MyFork = MyFork;
 	this->MyExit = MyExit;
-	MyMonitor = MyFork->MyMonitor;
-
-	SetActorLabel(GetName());
 	
-	SetTurningDirection();
-
 	SetupSpline();
-
 	SetupSplineMeshes();
 }
 
-void ALane::SetTurningDirection()
+FString ALane::GetCorrectSignal()
 {
 	auto EntranceDirection = MyFork->GetActorForwardVector();
 	auto ExitDirection = MyExit->GetActorForwardVector();
@@ -74,7 +68,16 @@ void ALane::SetTurningDirection()
 			Signal = EVehicleSignalState::Right;
 		}
 	}
-	CorrectSignal = Signal;
+	switch (Signal) {
+	case EVehicleSignalState::Left:
+		return FString("left");
+	case EVehicleSignalState::Right:
+		return FString("right");
+	case EVehicleSignalState::Emergency:
+		return FString("emergency");
+	default:
+		return FString("off");
+	}
 }
 
 void ALane::SetupSpline()
@@ -164,55 +167,6 @@ void ALane::SetupSplineMeshes()
 	}
 }
 
-// Called when the game starts or when spawned
-void ALane::BeginPlay()
-{
-	Super::BeginPlay();
-	
-	//SetCollisionProfileName(FName("OverlapAll"));
-	//SetGenerateOverlapEvents(true);
-	OnActorBeginOverlap.AddDynamic(this, &ALane::OnBeginOverlap);
-	OnActorEndOverlap.AddDynamic(this, &ALane::OnEndOverlap);
-}
-
-void ALane::OnBeginOverlap(AActor* ThisActor, AActor* OtherActor)
-{
-	if (MyMonitor != nullptr)
-	{
-		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-		FString EnteringActorName = OtherActor->GetName().ToLower();
-		FString Atom = "entersLaneAtTime("
-			+ EnteringActorName + ", "
-			+ GetName().ToLower() + ", "
-			+ FString::FromInt(TimeStep) + ").";
-		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
-		MyMonitor->AddEvent(EnteringActorName, Atom, TimeStep);
-	}
-	else
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnBeginOverlap!"), *(GetName()));
-	}
-}
-
-
-void ALane::OnEndOverlap(AActor* ThisActor, AActor* OtherActor)
-{
-	if (MyMonitor != nullptr)
-	{
-		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-		FString EnteringActorName = OtherActor->GetName().ToLower();
-		FString Atom = "leavesLaneAtTime("
-			+ EnteringActorName + ", "
-			+ GetName().ToLower() + ", "
-			+ FString::FromInt(TimeStep) + ").";
-		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
-		MyMonitor->AddEvent(EnteringActorName, Atom, TimeStep);
-	}
-	else
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnEndOverlap!"), *(GetName()));
-	}
-}
 
 // Reference: "2011_Curvature variation minimizing cubic Hermite interpolants"
 bool ALane::MinimumCurvatureVariation(FVector2D p0, FVector2D p1, FVector2D d0, FVector2D d1, float& OutAlpha0, float& OutAlpha1)
@@ -230,14 +184,4 @@ bool ALane::MinimumCurvatureVariation(FVector2D p0, FVector2D p1, FVector2D d0, 
 		return true;
 	}
 	return false;
-}
-
-
-void ALane::SetMonitor(AIntersectionMonitor* Monitor)
-{
-	MyMonitor = Monitor;
-	if (MyExit != nullptr)
-	{
-		MyExit->MyMonitor = Monitor;
-	}
 }

@@ -67,7 +67,7 @@ void AIntersectionMonitor::BeginPlay()
 
 	SetupTriggers();
 
-	RecordGeometry();
+	LoadGeometryFacts();
 }
 
 
@@ -76,19 +76,20 @@ void AIntersectionMonitor::SetupTriggers()
 	ExtentBox->OnComponentEndOverlap.AddDynamic(this, &AIntersectionMonitor::OnExitMonitor);
 
 	TArray<AActor *> OverlappingActors;
-	GetOverlappingActors(OverlappingActors, AFork::StaticClass());
+	GetOverlappingActors(OverlappingActors);
 	for (AActor* Actor : OverlappingActors)
 	{
 		AFork* Fork = Cast<AFork>(Actor);
+		ALane* Lane = Cast<ALane>(Actor);
 		if (Fork != nullptr)
 		{
 			Fork->ArrivalTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnArrival);
 			Fork->EntranceTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnEntrance);
-			//UE_LOG(LogTemp, Warning, TEXT("%s connected to a logger!"), *(Fork->GetName()));
 		}
-		else
+		else if (Lane != nullptr)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Could not connect: Overlapping actor was null!"));
+			Lane->OnActorBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnEnterLane);
+			Lane->OnActorEndOverlap.AddDynamic(this, &AIntersectionMonitor::OnExitLane);
 		}
 	}
 }
@@ -165,9 +166,9 @@ void AIntersectionMonitor::LogGeometry()
 	// Graph connectivity
 	for (ALane* Lane : Lanes)
 	{
-		FString FactString = "laneFromTo(_"
-			+ Lane->GetName() + ", _"
-			+ Lane->MyFork->GetName() + ", _"
+		FString FactString = "laneFromTo(l_"
+			+ Lane->GetName() + ", f_"
+			+ Lane->MyFork->GetName() + ", e_"
 			+ Lane->MyExit->GetName() + ").";
 		LogFile << TCHAR_TO_UTF8(*FactString) << std::endl;
 	}
@@ -179,12 +180,12 @@ void AIntersectionMonitor::LogGeometry()
 		{
 			if (Lanes[i]->IsOverlappingActor(Lanes[j]))
 			{
-				FString FactString = "overlaps(_"
-					+ Lanes[i]->GetName() + ", _"
+				FString FactString = "overlaps(l_"
+					+ Lanes[i]->GetName() + ", l_"
 					+ Lanes[j]->GetName() + ").";
 				LogFile << TCHAR_TO_UTF8(*FactString) << std::endl;
-				FactString = "overlaps(_"
-					+ Lanes[j]->GetName() + ", _"
+				FactString = "overlaps(l_"
+					+ Lanes[j]->GetName() + ", l_"
 					+ Lanes[i]->GetName() + ").";
 				LogFile << TCHAR_TO_UTF8(*FactString) << std::endl;
 			}
@@ -196,10 +197,8 @@ void AIntersectionMonitor::LogGeometry()
 }
 
 
-void AIntersectionMonitor::RecordGeometry()
+void AIntersectionMonitor::LoadGeometryFacts()
 {
-	//Geometry += "#program geometry.\n";
-
 	// Get a list of Forks
 	TArray<AActor *> OverlappingActors;
 	GetOverlappingActors(OverlappingActors);
@@ -231,6 +230,10 @@ void AIntersectionMonitor::RecordGeometry()
 				LeftFork += Forks[i]->GetName();
 				RightFork += Forks[j]->GetName();
 			}
+			else
+			{
+				continue;
+			}
 			FString FactString = "isToTheRightOf("
 				+ RightFork + ", "
 				+ LeftFork + ").";
@@ -252,27 +255,36 @@ void AIntersectionMonitor::RecordGeometry()
 	// Graph connectivity
 	for (ALane* Lane : Lanes)
 	{
-		FString FactString = "laneFromTo("
-			+ Lane->GetName().ToLower() + ", "
-			+ Lane->MyFork->GetName().ToLower() + ", "
-			+ Lane->MyExit->GetName().ToLower() + ").";
+		FString FactString = "laneFromTo(l_"
+			+ Lane->GetName() + ", f_"
+			+ Lane->MyFork->GetName() + ", e_"
+			+ Lane->MyExit->GetName() + ").";
+		Geometry += FactString + "\n";
+		
+		FactString = "laneCorrectSignal(l_"
+			+ Lane->GetName() + ", "
+			+ Lane->GetCorrectSignal() + ").";
 		Geometry += FactString + "\n";
 	}
 
 	// Lane overlaps
 	for (size_t i = 0; i < Lanes.Num(); i++)
 	{
+		FString FactString = "overlaps(l_"
+			+ Lanes[i]->GetName() + ", l_"
+			+ Lanes[i]->GetName() + ").";
+		Geometry += FactString + "\n";
 		for (size_t j = i + 1; j < Lanes.Num(); j++)
 		{
 			if (Lanes[i]->IsOverlappingActor(Lanes[j]))
 			{
-				FString FactString = "overlaps(_"
-					+ Lanes[i]->GetName().ToLower() + ", _"
-					+ Lanes[j]->GetName().ToLower() + ").";
+				FactString = "overlaps(l_"
+					+ Lanes[i]->GetName() + ", l_"
+					+ Lanes[j]->GetName() + ").";
 				Geometry += FactString + "\n";
-				FactString = "overlaps(_"
-					+ Lanes[j]->GetName().ToLower() + ", _"
-					+ Lanes[i]->GetName().ToLower() + ").";
+				FactString = "overlaps(l_"
+					+ Lanes[j]->GetName() + ", l_"
+					+ Lanes[i]->GetName() + ").";
 				Geometry += FactString + "\n";
 			}
 		}
@@ -280,21 +292,16 @@ void AIntersectionMonitor::RecordGeometry()
 }
 
 
-void AIntersectionMonitor::AddEvent(FString Actor, FString Atom, uint32 TimeStep)
+void AIntersectionMonitor::AddEvent(FString Actor, FString Atom)
 {
 	// TODO: Use TimeStep to buffer concurrent events
-	ActorToEventsMap.Add(Actor, Atom);	
+	FString& PreviousAtoms = ActorToEventsMap.FindOrAdd(Actor);
+	PreviousAtoms += Atom + "\n";
+	UE_LOG(LogTemp, Warning, TEXT("Event: %s"), *Atom);
 }
 
 
-void AIntersectionMonitor::AddExitEvent(FString Actor, FString Atom, uint32 TimeStep)
-{
-	ActorToEventsMap.Remove(Actor);
-	Solve();
-}
-
-
-void AIntersectionMonitor::LogEvent(FString EventMessage)
+void AIntersectionMonitor::LogEventToFile(FString EventMessage)
 {
 	std::ofstream LogFile(TCHAR_TO_UTF8(*AbsoluteFilePath), std::ios::app);
 	LogFile << TCHAR_TO_UTF8(*EventMessage) << std::endl;
@@ -317,18 +324,18 @@ void AIntersectionMonitor::OnArrival(
 		+ ArrivingVehicleID + ", "
 		+ Fork + ", "
 		+ FString::FromInt(TimeStep) + ").";
-	ActorToEventsMap.Add(OtherActor->GetName(), EventAtom);
+	AddEvent(OtherActor->GetName(), EventAtom);
 
 	ACarlaWheeledVehicle* ArrivingVehicle = Cast<ACarlaWheeledVehicle>(OtherActor);
 	if (ArrivingVehicle != nullptr)
 	{
 		FString SignalString = ArrivingVehicle->GetSignalString();
-		EventAtom = "signalsDirectionAtForkAtTime("
+		EventAtom = "signalsAtForkAtTime("
 			+ ArrivingVehicleID + ", "
 			+ SignalString + ", "
 			+ Fork + ", "
 			+ FString::FromInt(TimeStep) + ").";
-		ActorToEventsMap.Add(OtherActor->GetName(), EventAtom);
+		AddEvent(OtherActor->GetName(), EventAtom);
 		VehiclePointers.Add(OtherActor->GetName(), ArrivingVehicle); // TODO: remove pointer in OnExit
 	}
 	else
@@ -356,8 +363,38 @@ void AIntersectionMonitor::OnEntrance(
 		+ Fork + ", "
 		+ FString::FromInt(TimeStep) + ").";
 
-	ActorToEventsMap.Add(OtherActor->GetName(), Atom);
+	AddEvent(OtherActor->GetName(), Atom);
 	Solve();
+}
+
+
+void AIntersectionMonitor::OnEnterLane(AActor* ThisActor, AActor* OtherActor)
+{
+		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / TimeResolution);
+		FString EnteringActorName = "v_" + OtherActor->GetName();
+		FString LaneName = "l_" + ThisActor->GetName();
+		FString Atom = "entersLaneAtTime("
+			+ EnteringActorName + ", "
+			+ LaneName + ", "
+			+ FString::FromInt(TimeStep) + ").";
+		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
+		AddEvent(OtherActor->GetName(), Atom);
+		Solve();
+}
+
+
+void AIntersectionMonitor::OnExitLane(AActor* ThisActor, AActor* OtherActor)
+{
+		int32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / TimeResolution);
+		FString ExitingActorName = "v_" + OtherActor->GetName();
+		FString LaneName = "l_" + ThisActor->GetName();
+		FString Atom = "leavesLaneAtTime("
+			+ ExitingActorName + ", "
+			+ LaneName + ", "
+			+ FString::FromInt(TimeStep) + ").";
+		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
+		AddEvent(OtherActor->GetName(), Atom);
+		Solve();
 }
 
 
@@ -376,17 +413,17 @@ void AIntersectionMonitor::Solve()
 {
 	try {
 		Clingo::Logger logger = [](Clingo::WarningCode, char const *message) {
-			//UE_LOG(LogTemp, Warning, TEXT("Clingo logger message: %s"), ANSI_TO_TCHAR(message));
+			UE_LOG(LogTemp, Warning, TEXT("Clingo logger message: %s"), ANSI_TO_TCHAR(message));
 		};
 
 		Clingo::Control ctl{ {}, logger, 20 };
 
-		char* GeometryString = TCHAR_TO_UTF8(*Geometry);
+		char* GeometryString = TCHAR_TO_ANSI(*Geometry);
 		ctl.add("base", {}, GeometryString);
 
 		for (auto& Pair : ActorToEventsMap)
 		{
-			char* Atom = TCHAR_TO_UTF8(*Pair.Value);
+			char* Atom = TCHAR_TO_ANSI(*(Pair.Value));
 			//UE_LOG(LogTemp, Warning, TEXT("Adding to the program: %s"), *Pair.Value);
 			ctl.add("base", {}, Atom);
 		}
@@ -396,7 +433,9 @@ void AIntersectionMonitor::Solve()
 
 		ctl.ground({ {"base", {}} });
 		auto solveHandle = ctl.solve();
+		size_t count = 0;
 		for (auto &model : solveHandle) {
+			count++;
 			FString Model;
 			for (auto &atom : model.symbols()) {
 				if (atom.match("mustYieldToForRule", 3))
@@ -407,6 +446,7 @@ void AIntersectionMonitor::Solve()
 					if (Controller != nullptr)
 					{
 						Controller->SetTrafficLightState(ETrafficLightState::Red);
+						UE_LOG(LogTemp, Warning, TEXT("Setting %s's controller to yield!"), *YieldingVehicleName);
 					}
 					else
 					{
@@ -430,7 +470,7 @@ void AIntersectionMonitor::Solve()
 				FString AtomString(atom.to_string().c_str());
 				Model.Append("\t" + AtomString + "\n");
 			}
-			UE_LOG(LogTemp, Error, TEXT("Clingo Model:\n%s\n"), *Model);
+			UE_LOG(LogTemp, Error, TEXT("Clingo Model %d:\n%s\n"), count, *Model);
 
 		}
 	}

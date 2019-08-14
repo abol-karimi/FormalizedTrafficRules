@@ -24,9 +24,8 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void LogEvent(FString EventMessage);
-	void AddEvent(FString Actor, FString Atom, uint32 TimeStep);
-	void AddExitEvent(FString Actor, FString Atom, uint32 TimeStep);
+	void LogEventToFile(FString EventMessage);
+	void AddEvent(FString Actor, FString Atom);
 
 	UFUNCTION()
 	void OnArrival(
@@ -53,6 +52,12 @@ public:
 			UPrimitiveComponent* OtherComp,
 			int32 OtherBodyIndex);
 
+	UFUNCTION()
+	void OnEnterLane(AActor* ThisActor, AActor* OtherActor);
+
+	UFUNCTION()
+	void OnExitLane(AActor* ThisActor, AActor* OtherActor);
+
 public:
 	UPROPERTY()
 	UBillboardComponent* Billboard;
@@ -66,13 +71,18 @@ private:
 	void CreateLogFile();
 	void SetupTriggers();
 	void LogGeometry();
-	void RecordGeometry();
+	void LoadGeometryFacts();
 	void Solve();
 
 	FString FileName;
 	FString AbsoluteFilePath;
 	size_t NumberOfForks;
-	TMultiMap<FString, FString> ActorToEventsMap;
+
+	UPROPERTY(VisibleAnywhere)
+	TMap<FString, FString> ActorToEventsMap;
+
+	UPROPERTY(VisibleAnywhere)
 	FString Geometry;
+	
 	TMap<FString, class ACarlaWheeledVehicle*> VehiclePointers;
 };

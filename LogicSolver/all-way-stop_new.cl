@@ -1,7 +1,10 @@
 %-----------------Traffic--------------
+insideTheIntersection(Vehicle):-
+  entersForkAtTime(Vehicle, _, _).
+
 atTheIntersection(Vehicle):-
   arrivesAtForkAtTime(Vehicle, _, _),
-  not entersForkAtTime(Vehicle, _, _).
+  not insideTheIntersection(Vehicle).
 
 isAtFork(Vehicle, Fork):-
   arrivesAtForkAtTime(Vehicle, Fork, Time),
@@ -21,11 +24,29 @@ isToTheRightOf(Vehicle1, Vehicle2):-
   isAtFork(Vehicle2, Fork2),
   isToTheRightOf(Fork1, Fork2).
 
-insideTheIntersection(Vehicle):-
-  entersForkAtTime(Vehicle, _, _).
+leftLane(Vehicle, Lane):-
+  leavesLaneAtTime(Vehicle, Lane, _).
 
-insideIsEmpty:-
-  not insideTheIntersection(_).
+% Does not handle re-entries.
+isOnLane(Vehicle, Lane):-
+  entersLaneAtTime(Vehicle, Lane, _),
+  not leftLane(Vehicle, Lane).
+
+laneOnFork(Lane, Fork):-
+  laneFromTo(Lane, Fork, _).
+
+%------------------------------------------
+%--------------Rules pre-definitions-------
+%------------------------------------------
+wantsLane(Vehicle, Lane):-
+  signalsAtForkAtTime(Vehicle, Signal, Fork, _),
+  laneOnFork(Lane, Fork),
+  laneCorrectSignal(Lane, Signal).
+
+% vehicle on the planned lane
+reservedLane(Vehicle, Lane):-
+  isOnLane(Vehicle, Lane),
+  wantsLane(Vehicle, Lane).
 
 %---------------- Rules ---------------
 % Page 35:
@@ -48,7 +69,9 @@ mustYieldToForRule(Vehicle1, Vehicle2, yieldToRight):-
 
 mustYieldToForRule(Vehicle1, Vehicle2, yieldToInside):-
   atTheIntersection(Vehicle1),
-  insideTheIntersection(Vehicle2).
+  wantsLane(Vehicle1, Lane1),
+  overlaps(Lane1, Lane2),
+  reservedLane(Vehicle2, Lane2).
 
 %-------------------------------------------------
 mustYield(Vehicle):-
@@ -60,5 +83,3 @@ hasRightOfWay(Vehicle):-
 
 #show mustYieldToForRule/3.
 #show hasRightOfWay/1.
-#show atTheIntersection/1.
-#show arrivesAtForkAtTime/3.

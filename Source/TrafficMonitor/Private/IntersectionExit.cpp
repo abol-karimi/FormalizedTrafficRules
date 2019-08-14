@@ -34,27 +34,4 @@ void AIntersectionExit::BeginPlay()
 	
 	TriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
 	TriggerVolume->SetGenerateOverlapEvents(true);
-	TriggerVolume->OnComponentEndOverlap.AddDynamic(this, &AIntersectionExit::OnExit);
-}
-
-void AIntersectionExit::OnExit(
-	UPrimitiveComponent* OverlappedComp,
-	AActor* OtherActor,
-	UPrimitiveComponent* OtherComp,
-	int32 OtherBodyIndex)
-{
-	if (MyMonitor != nullptr)
-	{
-		uint32 TimeStep = FMath::FloorToInt(GetWorld()->GetTimeSeconds() / MyMonitor->TimeResolution);
-		FString ArrivingActorName = OtherActor->GetName().ToLower();
-		FString Atom = "exitsIntersectionAtTime(" 
-			+ ArrivingActorName + ", "
-			+ FString::FromInt(TimeStep) + ").";
-		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
-		MyMonitor->AddExitEvent(ArrivingActorName, Atom, TimeStep);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("MyMonitor is null in %s::OnExit!"), *(GetName()));
-	}
 }

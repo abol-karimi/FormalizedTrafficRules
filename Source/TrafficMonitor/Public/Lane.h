@@ -25,26 +25,14 @@ public:
 
 protected:
 	virtual void OnConstruction(const FTransform &Transform) override;
-	
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
 public:	
 	void Init(class AFork* MyFork, AIntersectionExit* MyExit);
 	void SetupSpline();
 	void SetupSplineMeshes();
-	void SetMonitor(AIntersectionMonitor* Monitor);
-
-	UFUNCTION()
-	void OnBeginOverlap(AActor* ThisActor, AActor* OtherActor);
-
-	UFUNCTION()
-	void OnEndOverlap(AActor* ThisActor, AActor* OtherActor);
+	FString GetCorrectSignal();
 
 public:
-	UPROPERTY(EditAnywhere)
-	EVehicleSignalState CorrectSignal;
-
 	UPROPERTY(VisibleAnywhere)
 	class AFork* MyFork = nullptr;
 
@@ -77,6 +65,4 @@ private:
 		FVector2D d1, 
 		float& OutAlpha0, 
 		float& OutAlpha1);
-	void LogGeometry();
-	void SetTurningDirection();
 };

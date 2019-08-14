@@ -28,20 +28,9 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	UFUNCTION()
-		void OnExit(
-			UPrimitiveComponent* OverlappedComp,
-			AActor* OtherActor,
-			UPrimitiveComponent* OtherComp,
-			int32 OtherBodyIndex);
-public:
 	UPROPERTY(EditAnywhere)
 	UBoxComponent* TriggerVolume;
 
 	UPROPERTY()
 	UArrowComponent* ForwardArrow;
-
-	UPROPERTY()
-	AIntersectionMonitor* MyMonitor;
-
 };

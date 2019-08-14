@@ -56,7 +56,4 @@ public:
 
 	UPROPERTY(VisibleAnywhere)
 	TArray<ALane*> Lanes;
-
-	UPROPERTY()
-	AIntersectionMonitor* MyMonitor;
 };
