@@ -68,6 +68,7 @@ void AIntersectionMonitor::BeginPlay()
 	SetupTriggers();
 
 	LoadGeometryFacts();
+	WriteGeometryToFile();
 }
 
 
@@ -98,99 +99,11 @@ void AIntersectionMonitor::SetupTriggers()
 void AIntersectionMonitor::CreateLogFile()
 {
 	// Init logfile name and path
-	FileName = GetName() + ".cl";
-	AbsoluteFilePath = FPaths::ProjectSavedDir() + this->FileName;
+	LogFileName = GetName() + "Log.cl";
+	LogFileFullName = FPaths::ProjectSavedDir() + LogFileName;
 
 	// Create the logfile 
-	std::ofstream LogFile(std::string(TCHAR_TO_UTF8(*AbsoluteFilePath)), std::ios::trunc);
-
-	// Close the file stream explicitly
-	LogFile.close();
-}
-
-
-void AIntersectionMonitor::LogGeometry()
-{
-	//Creates an instance of ofstream, and opens for appending
-	std::ofstream LogFile(TCHAR_TO_UTF8(*AbsoluteFilePath), std::ios::app);
-
-	LogFile << "#program geometry." << std::endl;
-
-	// Get a list of Forks
-	TArray<AActor *> OverlappingActors;
-	GetOverlappingActors(OverlappingActors);
-	TArray<AFork *> Forks;
-	for (AActor* OverlappingActor : OverlappingActors)
-	{
-		AFork* Fork = Cast<AFork>(OverlappingActor);
-		if (Fork != nullptr)
-		{
-			Forks.Add(Fork);
-		}
-	}
-	NumberOfForks = Forks.Num();
-
-	// "isToTheRightOf()" facts
-	for (size_t i = 0; i < NumberOfForks; i++)
-	{
-		for (size_t j = i + 1; j < NumberOfForks; j++)
-		{
-			if (Forks[i]->IsToTheRightOf(Forks[j])) // angle in (30, 150)
-			{
-				FString FactString = "isToTheRightOf(_"
-					+ Forks[i]->GetName() + ", _"
-					+ Forks[j]->GetName() + ").";
-				LogFile << TCHAR_TO_UTF8(*FactString) << std::endl;
-			}
-			else if (Forks[j]->IsToTheRightOf(Forks[i])) // angle in (-150, -30)
-			{
-				FString FactString = "isToTheRightOf(_"
-					+ Forks[j]->GetName() + ", _"
-					+ Forks[i]->GetName() + ").";
-				LogFile << TCHAR_TO_UTF8(*FactString) << std::endl;
-			}
-		}
-	}
-
-	// Get a list of Lanes
-	TArray<ALane *> Lanes;
-	for (AActor* OverlappingActor : OverlappingActors)
-	{
-		ALane* Lane = Cast<ALane>(OverlappingActor);
-		if (Lane != nullptr)
-		{
-			Lanes.Add(Lane);
-		}
-	}
-
-	// Graph connectivity
-	for (ALane* Lane : Lanes)
-	{
-		FString FactString = "laneFromTo(l_"
-			+ Lane->GetName() + ", f_"
-			+ Lane->MyFork->GetName() + ", e_"
-			+ Lane->MyExit->GetName() + ").";
-		LogFile << TCHAR_TO_UTF8(*FactString) << std::endl;
-	}
-
-	// Lane overlaps
-	for (size_t i = 0; i < Lanes.Num(); i++)
-	{
-		for (size_t j = i + 1; j < Lanes.Num(); j++)
-		{
-			if (Lanes[i]->IsOverlappingActor(Lanes[j]))
-			{
-				FString FactString = "overlaps(l_"
-					+ Lanes[i]->GetName() + ", l_"
-					+ Lanes[j]->GetName() + ").";
-				LogFile << TCHAR_TO_UTF8(*FactString) << std::endl;
-				FactString = "overlaps(l_"
-					+ Lanes[j]->GetName() + ", l_"
-					+ Lanes[i]->GetName() + ").";
-				LogFile << TCHAR_TO_UTF8(*FactString) << std::endl;
-			}
-		}
-	}
+	std::ofstream LogFile(TCHAR_TO_UTF8(*LogFileFullName), std::ios::trunc);
 
 	// Close the file stream explicitly
 	LogFile.close();
@@ -301,13 +214,21 @@ void AIntersectionMonitor::AddEvent(FString Actor, FString Atom)
 }
 
 
-void AIntersectionMonitor::LogEventToFile(FString EventMessage)
+void AIntersectionMonitor::AppendToLogfile(FString Content)
 {
-	std::ofstream LogFile(TCHAR_TO_UTF8(*AbsoluteFilePath), std::ios::app);
-	LogFile << TCHAR_TO_UTF8(*EventMessage) << std::endl;
+	std::ofstream LogFile(TCHAR_TO_UTF8(*LogFileFullName), std::ios::app);
+	LogFile << TCHAR_TO_UTF8(*Content) << std::endl;
 	LogFile.close();
 }
 
+
+void AIntersectionMonitor::WriteGeometryToFile()
+{
+	FString GeometryFileFullName = FPaths::ProjectSavedDir() + GetName() + "Geometry.cl";
+	std::ofstream GeometryFile(TCHAR_TO_UTF8(*GeometryFileFullName), std::ios::trunc);
+	GeometryFile << TCHAR_TO_UTF8(*Geometry);
+	GeometryFile.close();
+}
 
 void AIntersectionMonitor::OnArrival(
 	UPrimitiveComponent* OverlappedComp,
@@ -336,7 +257,7 @@ void AIntersectionMonitor::OnArrival(
 			+ Fork + ", "
 			+ FString::FromInt(TimeStep) + ").";
 		AddEvent(OtherActor->GetName(), EventAtom);
-		VehiclePointers.Add(OtherActor->GetName(), ArrivingVehicle); // TODO: remove pointer in OnExit
+		VehiclePointers.Add(OtherActor->GetName(), ArrivingVehicle);
 	}
 	else
 	{
@@ -405,7 +326,19 @@ void AIntersectionMonitor::OnExitMonitor(
 	int32 OtherBodyIndex)
 {
 	ActorToEventsMap.Remove(OtherActor->GetName());
+	VehiclePointers.Remove(OtherActor->GetName());
 	Solve();
+}
+
+
+FString AIntersectionMonitor::GetEventsString()
+{
+	FString EventsString;
+	for (auto& Pair : ActorToEventsMap)
+	{
+		EventsString += Pair.Value;
+	}
+	return EventsString;
 }
 
 
@@ -415,24 +348,31 @@ void AIntersectionMonitor::Solve()
 		Clingo::Logger logger = [](Clingo::WarningCode, char const *message) {
 			UE_LOG(LogTemp, Warning, TEXT("Clingo logger message: %s"), ANSI_TO_TCHAR(message));
 		};
+		
+		FString ProgramTitle = "#program time_" 
+			+ FString::FromInt(FMath::FloorToInt(GetWorld()->GetTimeSeconds() * 1000))
+			+ ".\n";
+		FString EventsString = GetEventsString();
+		AppendToLogfile(ProgramTitle + EventsString);
 
 		Clingo::Control ctl{ {}, logger, 20 };
 
-		char* GeometryString = TCHAR_TO_ANSI(*Geometry);
-		ctl.add("base", {}, GeometryString);
+		char* Program = TCHAR_TO_ANSI(*(Geometry + EventsString));
+		ctl.add("base", {}, Program);
 
-		for (auto& Pair : ActorToEventsMap)
-		{
-			char* Atom = TCHAR_TO_ANSI(*(Pair.Value));
-			//UE_LOG(LogTemp, Warning, TEXT("Adding to the program: %s"), *Pair.Value);
-			ctl.add("base", {}, Atom);
-		}
-
+		// Load everytime so that you can change the behaviour during runtime.
 		const char* RulesFileName = TCHAR_TO_UTF8(*(FPaths::ProjectDir() + "Plugins/TrafficMonitor/LogicSolver/all-way-stop_new.cl"));
 		ctl.load(RulesFileName);
 
+		UE_LOG(LogTemp, Warning, TEXT("Next: grounding the program..."));
 		ctl.ground({ {"base", {}} });
+
+		UE_LOG(LogTemp, Warning, TEXT("Next: solving the program..."));
 		auto solveHandle = ctl.solve();
+
+		solveHandle.wait();
+
+		UE_LOG(LogTemp, Warning, TEXT("Next: going over the solutions..."));
 		size_t count = 0;
 		for (auto &model : solveHandle) {
 			count++;

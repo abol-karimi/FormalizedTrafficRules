@@ -24,8 +24,8 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-	void LogEventToFile(FString EventMessage);
 	void AddEvent(FString Actor, FString Atom);
+	FString GetEventsString();
 
 	UFUNCTION()
 	void OnArrival(
@@ -70,18 +70,17 @@ public:
 private:
 	void CreateLogFile();
 	void SetupTriggers();
-	void LogGeometry();
 	void LoadGeometryFacts();
+	void WriteGeometryToFile();
+	void AppendToLogfile(FString EventMessage);
 	void Solve();
-
-	FString FileName;
-	FString AbsoluteFilePath;
+	
+	FString LogFileName;
+	FString LogFileFullName;
 	size_t NumberOfForks;
 
-	UPROPERTY(VisibleAnywhere)
 	TMap<FString, FString> ActorToEventsMap;
 
-	UPROPERTY(VisibleAnywhere)
 	FString Geometry;
 	
 	TMap<FString, class ACarlaWheeledVehicle*> VehiclePointers;

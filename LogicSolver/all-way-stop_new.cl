@@ -71,7 +71,8 @@ mustYieldToForRule(Vehicle1, Vehicle2, yieldToInside):-
   atTheIntersection(Vehicle1),
   wantsLane(Vehicle1, Lane1),
   overlaps(Lane1, Lane2),
-  reservedLane(Vehicle2, Lane2).
+  reservedLane(Vehicle2, Lane2),
+  not leftLane(Vehicle2, Lane1).
 
 %-------------------------------------------------
 mustYield(Vehicle):-
