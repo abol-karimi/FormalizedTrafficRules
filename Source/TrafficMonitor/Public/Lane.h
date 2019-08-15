@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "Components/SplineComponent.h"
 #include "Components/SplineMeshComponent.h"
-#include "IntersectionExit.h"
+#include "Exit.h"
 
 // carla
 #include "Vehicle/CarlaWheeledVehicle.h"
@@ -27,7 +27,7 @@ protected:
 	virtual void OnConstruction(const FTransform &Transform) override;
 
 public:	
-	void Init(class AFork* MyFork, AIntersectionExit* MyExit);
+	void Init(class AFork* MyFork, AExit* MyExit);
 	void SetupSpline();
 	void SetupSplineMeshes();
 	FString GetCorrectSignal();
@@ -37,7 +37,7 @@ public:
 	class AFork* MyFork = nullptr;
 
 	UPROPERTY(VisibleAnywhere)
-	AIntersectionExit* MyExit = nullptr;
+	AExit* MyExit = nullptr;
 
 	UPROPERTY()
 	AIntersectionMonitor* MyMonitor = nullptr;

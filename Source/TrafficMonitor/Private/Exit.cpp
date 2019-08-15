@@ -1,10 +1,10 @@
 // Copyright (c) 2017 Computer Vision Center (CVC) at the Universitat Autonoma de Barcelona (UAB). This work is licensed under the terms of the MIT license. For a copy, see <https://opensource.org/licenses/MIT>.
 
 
-#include "IntersectionExit.h"
+#include "Exit.h"
 
 // Sets default values
-AIntersectionExit::AIntersectionExit(const FObjectInitializer &ObjectInitializer)
+AExit::AExit(const FObjectInitializer &ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	RootComponent =
@@ -28,10 +28,12 @@ AIntersectionExit::AIntersectionExit(const FObjectInitializer &ObjectInitializer
 }
 
 // Called when the game starts or when spawned
-void AIntersectionExit::BeginPlay()
+void AExit::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	TriggerVolume->SetCollisionProfileName(FName("OverlapAll"));
-	TriggerVolume->SetGenerateOverlapEvents(true);
+	TriggerVolume->SetGenerateOverlapEvents(true);	
 }
+
+

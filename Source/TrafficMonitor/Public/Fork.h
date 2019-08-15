@@ -9,7 +9,7 @@
 #include "Components/ArrowComponent.h"
 
 // Developer
-#include "IntersectionExit.h"
+#include "Exit.h"
 #include "Lane.h"
 #include "IntersectionMonitor.h"
 
@@ -52,7 +52,7 @@ public:
 	UArrowComponent* ForwardArrow;
 
 	UPROPERTY(EditAnywhere, meta=(NoElementDuplicate))
-	TArray<AIntersectionExit*> Exits;
+	TArray<AExit*> Exits;
 
 	UPROPERTY(VisibleAnywhere)
 	TArray<ALane*> Lanes;

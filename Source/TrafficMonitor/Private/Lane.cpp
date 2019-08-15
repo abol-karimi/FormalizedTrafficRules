@@ -28,8 +28,6 @@ ALane::ALane(const FObjectInitializer &ObjectInitializer)
 	static ConstructorHelpers::FObjectFinder<UMaterial> MaterialFinder
 	(TEXT("Material'/TrafficMonitor/TransparentBlue.TransparentBlue'"));
 	Material = MaterialFinder.Object;
-
-	//UE_LOG(LogTemp, Warning, TEXT("Lane constructor: number of spline points: %d"), Spline->GetNumberOfSplinePoints());
 }
 
 void ALane::OnConstruction(const FTransform &Transform)
@@ -39,7 +37,7 @@ void ALane::OnConstruction(const FTransform &Transform)
 	UE_LOG(LogTemp, Warning, TEXT("ALane OnConstruction called!"));
 }
 
-void ALane::Init(AFork* MyFork, AIntersectionExit* MyExit)
+void ALane::Init(AFork* MyFork, AExit* MyExit)
 {
 	this->MyFork = MyFork;
 	this->MyExit = MyExit;

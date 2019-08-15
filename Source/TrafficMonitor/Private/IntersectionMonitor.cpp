@@ -9,15 +9,10 @@
 
 
 THIRD_PARTY_INCLUDES_START
-
 #pragma push_macro("check")
-
 #undef check
-
 #include <clingo.hh>
-
 #pragma pop_macro("check")
-
 THIRD_PARTY_INCLUDES_END
 
 
@@ -80,18 +75,19 @@ void AIntersectionMonitor::SetupTriggers()
 	GetOverlappingActors(OverlappingActors);
 	for (AActor* Actor : OverlappingActors)
 	{
-		AFork* Fork = Cast<AFork>(Actor);
 		ALane* Lane = Cast<ALane>(Actor);
-		if (Fork != nullptr)
-		{
-			Fork->ArrivalTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnArrival);
-			Fork->EntranceTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnEntrance);
-		}
-		else if (Lane != nullptr)
+		AFork* Fork = Cast<AFork>(Actor);
+		if (Lane != nullptr)
 		{
 			Lane->OnActorBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnEnterLane);
 			Lane->OnActorEndOverlap.AddDynamic(this, &AIntersectionMonitor::OnExitLane);
 		}
+		else if (Fork != nullptr)
+		{
+			Fork->ArrivalTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnArrival);
+			Fork->EntranceTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnEntrance);
+		}
+
 	}
 }
 
@@ -298,7 +294,6 @@ void AIntersectionMonitor::OnEnterLane(AActor* ThisActor, AActor* OtherActor)
 			+ EnteringActorName + ", "
 			+ LaneName + ", "
 			+ FString::FromInt(TimeStep) + ").";
-		//UE_LOG(LogTemp, Warning, TEXT("%s"), *(Atom));
 		AddEvent(OtherActor->GetName(), Atom);
 		Solve();
 }
@@ -355,6 +350,7 @@ void AIntersectionMonitor::Solve()
 		FString EventsString = GetEventsString();
 		AppendToLogfile(ProgramTitle + EventsString);
 
+		// Without the "-n 0" option, at most one model is found.
 		Clingo::Control ctl{ {}, logger, 20 };
 
 		char* Program = TCHAR_TO_ANSI(*(Geometry + EventsString));
@@ -364,18 +360,19 @@ void AIntersectionMonitor::Solve()
 		const char* RulesFileName = TCHAR_TO_UTF8(*(FPaths::ProjectDir() + "Plugins/TrafficMonitor/LogicSolver/all-way-stop_new.cl"));
 		ctl.load(RulesFileName);
 
-		UE_LOG(LogTemp, Warning, TEXT("Next: grounding the program..."));
 		ctl.ground({ {"base", {}} });
-
-		UE_LOG(LogTemp, Warning, TEXT("Next: solving the program..."));
 		auto solveHandle = ctl.solve();
-
-		solveHandle.wait();
-
-		UE_LOG(LogTemp, Warning, TEXT("Next: going over the solutions..."));
-		size_t count = 0;
+		auto solveResult = solveHandle.get();
+		if (solveResult.is_unsatisfiable())
+		{
+			UE_LOG(LogTemp, Error, TEXT("Not satisfiable!"));
+		}
+		if (solveResult.is_unknown())
+		{
+			UE_LOG(LogTemp, Error, TEXT("Satisfiability is unknown!"));
+		}
+		
 		for (auto &model : solveHandle) {
-			count++;
 			FString Model;
 			for (auto &atom : model.symbols()) {
 				if (atom.match("mustYieldToForRule", 3))
@@ -410,12 +407,11 @@ void AIntersectionMonitor::Solve()
 				FString AtomString(atom.to_string().c_str());
 				Model.Append("\t" + AtomString + "\n");
 			}
-			UE_LOG(LogTemp, Error, TEXT("Clingo Model %d:\n%s\n"), count, *Model);
+			UE_LOG(LogTemp, Error, TEXT("Clingo Model:\n%s\n"), *Model);
 
 		}
 	}
 	catch (std::exception const &e) {
 		UE_LOG(LogTemp, Warning, TEXT("Clingo failed with: %s"), ANSI_TO_TCHAR(e.what()));
 	}
-
 }

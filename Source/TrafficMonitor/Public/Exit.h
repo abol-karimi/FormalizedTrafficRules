@@ -2,7 +2,6 @@
 
 #pragma once
 
-// Engine's built-in
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/BoxComponent.h"
@@ -12,16 +11,16 @@
 #include "IntersectionMonitor.h"
 
 // Generated
-#include "IntersectionExit.generated.h"
+#include "Exit.generated.h"
 
 UCLASS()
-class TRAFFICMONITOR_API AIntersectionExit : public AActor
+class TRAFFICMONITOR_API AExit : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
 	// Sets default values for this actor's properties
-	AIntersectionExit(const FObjectInitializer &ObjectInitializer);
+	AExit(const FObjectInitializer &ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned
@@ -33,4 +32,5 @@ public:
 
 	UPROPERTY()
 	UArrowComponent* ForwardArrow;
+
 };
