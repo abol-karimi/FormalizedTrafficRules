@@ -60,90 +60,31 @@ void AFork::PostEditChangeProperty(FPropertyChangedEvent &PropertyChangedEvent)
 {
 	Super::PostEditChangeProperty(PropertyChangedEvent);
 
-	UE_LOG(LogTemp, Warning, TEXT("Change Type: %d"), PropertyChangedEvent.ChangeType);
-	if (!PropertyChangedEvent.Property)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AFork PropertyChangedEvent.Property is null!"));
-		return;
-	}
-	else if (PropertyChangedEvent.GetPropertyName() != FName("Exits"))
+	if (PropertyChangedEvent.GetPropertyName() != FName("bActive"))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AFork property %s changed!"), *(PropertyChangedEvent.GetPropertyName().ToString()));
 		return;
 	}
-
-	// The index at which the array Exits is modified
-	const auto index = PropertyChangedEvent.GetArrayIndex(FString("Exits"));
-	//UE_LOG(LogTemp, Warning, TEXT("AFork PropertyChangedEvent.GetArrayIndex(): %d"), index);
-
-	if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ValueSet)
+	
+	for (FExitCheckbox& ExitCheckbox : Exits)
 	{
-		if (Exits[index] == nullptr)
+		if (ExitCheckbox.bActive && ExitCheckbox.Lane == nullptr)
 		{
-			RemoveLane(index); // Does nothing if Branches[index] == nullptr
+			FString LaneName = GetName() + "_to_" + ExitCheckbox.Exit->GetName();
+			FActorSpawnParameters spawnParams;
+			spawnParams.Name = FName(*LaneName);
+			ExitCheckbox.Lane = GetWorld()->SpawnActor<ALane>(spawnParams);
+			ExitCheckbox.Lane->SetActorLabel(LaneName);
+			ExitCheckbox.Lane->Init(this, ExitCheckbox.Exit);
 		}
-		else if (index == Exits.Find(Exits[index]) && index == Exits.FindLast(Exits[index]))
-		{ // Exits[index] is valid and unique in Exits
-			// Remove previously associated branch, if any
-			RemoveLane(index); 
-			// Associate a new branch
-			AddLane(index); 
-		}
-		else // Exits[index] already exists at another location of array Exits
-		{			
-			Exits[index] = nullptr; // Avoid duplicate pointers in Exits
-			RemoveLane(index);
-		}
-	}
-	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayRemove)
-	{
-		// Destroy the corresponding fork branch
-		RemoveLane(index);
-		Lanes.RemoveAt(index);
-	}
-	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayClear)
-	{
-		for (int32 i = 0; i < Lanes.Num(); i++)
+		else if (!ExitCheckbox.bActive && ExitCheckbox.Lane != nullptr)
 		{
-			RemoveLane(i);
+			ExitCheckbox.Lane->Destroy();
+			ExitCheckbox.Lane = nullptr;
 		}
-		Lanes.Empty();
-	}
-	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::ArrayAdd) // Size of Exits incremented
-	{
-		// Increment the size of Branches
-		Lanes.Add(nullptr);
-	}
-	else if (PropertyChangedEvent.ChangeType == EPropertyChangeType::Duplicate)
-	{
-		Exits.RemoveAt(index);
 	}
 }
 #endif // WITH_EDITOR
-
-
-void AFork::AddLane(int32 index)
-{
-	if (Exits[index] == nullptr)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Attempted to add branch for a null exit!"));
-		return;
-	}
-	FString LaneName = GetName() + "_to_" + Exits[index]->GetName();
-	FActorSpawnParameters spawnParams;
-	spawnParams.Name = FName(*LaneName);
-	Lanes[index] = GetWorld()->SpawnActor<ALane>(spawnParams);
-	Lanes[index]->Init(this, Exits[index]);
-}
-
-void AFork::RemoveLane(int32 index)
-{
-	if (Lanes[index] != nullptr)
-	{
-		Lanes[index]->Destroy();
-		Lanes[index] = nullptr;
-	}
-}
 
 //void AFork::OnConstruction(const FTransform &Transform)
 //{
@@ -178,4 +119,14 @@ bool AFork::IsToTheRightOf(const AFork* OtherFork) const
 	// if Sine in [-0.5, 0.5] and Cosine > 0 then heading the same direction
 	// if Sine in [-0.5, 0.5] and Cosine < 0 then heading the opposite direction
 	return false;
+}
+
+void AFork::AddExit(AExit* Exit)
+{
+	for (FExitCheckbox ExitCheckbox : Exits)
+	{
+		if (ExitCheckbox.Exit == Exit)
+			return;
+	}
+	Exits.Add(FExitCheckbox(Exit));
 }

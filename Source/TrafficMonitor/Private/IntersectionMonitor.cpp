@@ -4,6 +4,8 @@
 #include "IntersectionMonitor.h"
 #include "Runtime/CoreUObject/Public/UObject/ConstructorHelpers.h"
 #include "Runtime/Core/Public/Misc/Paths.h"
+#include "Runtime/Engine/Classes/Kismet/KismetMathLibrary.h"
+#include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 
 #include "Vehicle/WheeledVehicleAIController.h"
 
@@ -53,6 +55,23 @@ AIntersectionMonitor::AIntersectionMonitor(const FObjectInitializer &ObjectIniti
 	ExtentBox->ShapeColor = FColor(255, 255, 255);
 }
 
+
+void AIntersectionMonitor::OnConstruction(const FTransform &Transform)
+{
+	TArray<AExit*> MyExits;
+	GetIntersectingActors<AExit>(MyExits);
+	TArray<AFork*> MyForks;
+	GetIntersectingActors<AFork>(MyForks);
+	for (AFork* Fork : MyForks)
+	{
+		for (AExit* Exit : MyExits)
+		{
+			Fork->AddExit(Exit);
+		}
+	}
+}
+
+
 // Called when the game starts or when spawned
 void AIntersectionMonitor::BeginPlay()
 {
@@ -87,7 +106,6 @@ void AIntersectionMonitor::SetupTriggers()
 			Fork->ArrivalTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnArrival);
 			Fork->EntranceTriggerVolume->OnComponentBeginOverlap.AddDynamic(this, &AIntersectionMonitor::OnEntrance);
 		}
-
 	}
 }
 
@@ -413,5 +431,23 @@ void AIntersectionMonitor::Solve()
 	}
 	catch (std::exception const &e) {
 		UE_LOG(LogTemp, Warning, TEXT("Clingo failed with: %s"), ANSI_TO_TCHAR(e.what()));
+	}
+}
+
+template <class ActorClass>
+void AIntersectionMonitor::GetIntersectingActors(TArray<ActorClass*>& OutArray)
+{
+	TArray<AActor*> AllActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ActorClass::StaticClass(), AllActors);
+	for (AActor* Actor : AllActors)
+	{
+		FVector MonitorToActor = Actor->GetActorLocation() - GetActorLocation();
+		FVector Displacement = UKismetMathLibrary::InverseTransformDirection(GetActorTransform(), MonitorToActor);
+		if ((abs(Displacement.X) <= ExtentBox->GetScaledBoxExtent().X)
+			&& (abs(Displacement.Y) <= ExtentBox->GetScaledBoxExtent().Y))
+		{
+			ActorClass* ActorTyped = Cast<ActorClass>(Actor);
+			OutArray.Add(ActorTyped);
+		}
 	}
 }

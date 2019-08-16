@@ -16,6 +16,28 @@
 // Generated
 #include "Fork.generated.h"
 
+USTRUCT()
+struct FExitCheckbox
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere)
+	AExit* Exit;
+
+	UPROPERTY(EditAnywhere)
+	bool bActive;
+
+	UPROPERTY()
+	ALane* Lane;
+
+	FExitCheckbox(AExit* Exit=nullptr)
+	{
+		this->Exit = Exit;
+		bActive = false;
+		Lane = nullptr;
+	}
+};
+
 UCLASS()
 class TRAFFICMONITOR_API AFork : public AActor
 {
@@ -37,9 +59,8 @@ protected:
 #endif // WITH_EDITOR
 
 public:
-	void AddLane(int32 index);
-	void RemoveLane(int32 index);
 	bool IsToTheRightOf(const AFork* OtherFork) const;
+	void AddExit(AExit* Exit);
 
 public:	
 	UPROPERTY(EditAnywhere)
@@ -51,9 +72,6 @@ public:
 	UPROPERTY()
 	UArrowComponent* ForwardArrow;
 
-	UPROPERTY(EditAnywhere, meta=(NoElementDuplicate))
-	TArray<AExit*> Exits;
-
-	UPROPERTY(VisibleAnywhere)
-	TArray<ALane*> Lanes;
+	UPROPERTY(EditAnywhere, EditFixedSize)
+	TArray<FExitCheckbox> Exits;
 };

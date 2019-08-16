@@ -18,6 +18,7 @@ class TRAFFICMONITOR_API AIntersectionMonitor : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AIntersectionMonitor(const FObjectInitializer &ObjectInitializer);
+	virtual void OnConstruction(const FTransform &Transform) override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -74,6 +75,9 @@ private:
 	void WriteGeometryToFile();
 	void AppendToLogfile(FString EventMessage);
 	void Solve();
+
+	template <class ActorClass>
+	void GetIntersectingActors(TArray<ActorClass*>& OutArray);
 	
 	FString LogFileName;
 	FString LogFileFullName;
