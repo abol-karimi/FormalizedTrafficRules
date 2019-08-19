@@ -8,6 +8,9 @@
 #include "Runtime/Engine/Classes/Components/BillboardComponent.h"
 #include "Runtime/Engine/Classes/Components/BoxComponent.h"
 
+// STL
+#include <iostream>
+
 #include "IntersectionMonitor.generated.h"
 
 UCLASS()
@@ -26,7 +29,7 @@ protected:
 
 public:
 	void AddEvent(FString Actor, FString Atom);
-	FString GetEventsString();
+	std::string GetEventsString();
 
 	UFUNCTION()
 	void OnArrival(
@@ -73,7 +76,8 @@ private:
 	void SetupTriggers();
 	void LoadGeometryFacts();
 	void WriteGeometryToFile();
-	void AppendToLogfile(FString EventMessage);
+	void LoadTrafficRules();
+	void AppendToLogfile(std::string EventMessage);
 	void Solve();
 
 	template <class ActorClass>
@@ -85,7 +89,8 @@ private:
 
 	TMap<FString, FString> ActorToEventsMap;
 
-	FString Geometry;
-	
+	std::string Geometry;
+	std::string TrafficRules;
+
 	TMap<FString, class ACarlaWheeledVehicle*> VehiclePointers;
 };

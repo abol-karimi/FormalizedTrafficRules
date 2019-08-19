@@ -7,9 +7,11 @@
 #include "Runtime/Engine/Classes/Kismet/KismetMathLibrary.h"
 #include "Runtime/Engine/Classes/Kismet/GameplayStatics.h"
 
+// Carla
 #include "Vehicle/WheeledVehicleAIController.h"
 
 
+// Clingo staticly linked library
 THIRD_PARTY_INCLUDES_START
 #pragma push_macro("check")
 #undef check
@@ -21,8 +23,11 @@ THIRD_PARTY_INCLUDES_END
 // Developer
 #include "Fork.h"
 
+
+// STL
 #include <fstream>
-#include <iostream>
+#include <sstream>
+
 
 // Sets default values
 AIntersectionMonitor::AIntersectionMonitor(const FObjectInitializer &ObjectInitializer)
@@ -83,6 +88,8 @@ void AIntersectionMonitor::BeginPlay()
 
 	LoadGeometryFacts();
 	WriteGeometryToFile();
+
+	LoadTrafficRules();
 }
 
 
@@ -164,7 +171,8 @@ void AIntersectionMonitor::LoadGeometryFacts()
 			FString FactString = "isToTheRightOf("
 				+ RightFork + ", "
 				+ LeftFork + ").";
-			Geometry += FactString + "\n";
+			Geometry += TCHAR_TO_ANSI(*FactString);
+			Geometry += "\n";
 		}
 	}
 
@@ -186,12 +194,14 @@ void AIntersectionMonitor::LoadGeometryFacts()
 			+ Lane->GetName() + ", f_"
 			+ Lane->MyFork->GetName() + ", e_"
 			+ Lane->MyExit->GetName() + ").";
-		Geometry += FactString + "\n";
+		Geometry += TCHAR_TO_ANSI(*FactString);
+		Geometry += "\n";
 		
 		FactString = "laneCorrectSignal(l_"
 			+ Lane->GetName() + ", "
 			+ Lane->GetCorrectSignal() + ").";
-		Geometry += FactString + "\n";
+		Geometry += TCHAR_TO_ANSI(*FactString);
+		Geometry += "\n";
 	}
 
 	// Lane overlaps
@@ -200,7 +210,8 @@ void AIntersectionMonitor::LoadGeometryFacts()
 		FString FactString = "overlaps(l_"
 			+ Lanes[i]->GetName() + ", l_"
 			+ Lanes[i]->GetName() + ").";
-		Geometry += FactString + "\n";
+		Geometry += TCHAR_TO_ANSI(*FactString);
+		Geometry += "\n";
 		for (size_t j = i + 1; j < Lanes.Num(); j++)
 		{
 			if (Lanes[i]->IsOverlappingActor(Lanes[j]))
@@ -208,14 +219,27 @@ void AIntersectionMonitor::LoadGeometryFacts()
 				FactString = "overlaps(l_"
 					+ Lanes[i]->GetName() + ", l_"
 					+ Lanes[j]->GetName() + ").";
-				Geometry += FactString + "\n";
+				Geometry += TCHAR_TO_ANSI(*FactString);
+				Geometry += "\n";
 				FactString = "overlaps(l_"
 					+ Lanes[j]->GetName() + ", l_"
 					+ Lanes[i]->GetName() + ").";
-				Geometry += FactString + "\n";
+				Geometry += TCHAR_TO_ANSI(*FactString);
+				Geometry += "\n";
 			}
 		}
 	}
+}
+
+
+void AIntersectionMonitor::LoadTrafficRules()
+{
+	FString RulesFileFullName = FPaths::ProjectSavedDir() + "../Plugins/TrafficMonitor/LogicSolver/all-way-stop_new.cl";
+	std::ifstream RulesFile(TCHAR_TO_UTF8(*RulesFileFullName));
+	std::stringstream buffer;
+	buffer << RulesFile.rdbuf();
+	TrafficRules = buffer.str();
+	RulesFile.close();
 }
 
 
@@ -228,10 +252,10 @@ void AIntersectionMonitor::AddEvent(FString Actor, FString Atom)
 }
 
 
-void AIntersectionMonitor::AppendToLogfile(FString Content)
+void AIntersectionMonitor::AppendToLogfile(std::string Content)
 {
 	std::ofstream LogFile(TCHAR_TO_UTF8(*LogFileFullName), std::ios::app);
-	LogFile << TCHAR_TO_UTF8(*Content) << std::endl;
+	LogFile << Content << std::endl;
 	LogFile.close();
 }
 
@@ -240,7 +264,7 @@ void AIntersectionMonitor::WriteGeometryToFile()
 {
 	FString GeometryFileFullName = FPaths::ProjectSavedDir() + GetName() + "Geometry.cl";
 	std::ofstream GeometryFile(TCHAR_TO_UTF8(*GeometryFileFullName), std::ios::trunc);
-	GeometryFile << TCHAR_TO_UTF8(*Geometry);
+	GeometryFile << Geometry;
 	GeometryFile.close();
 }
 
@@ -344,14 +368,14 @@ void AIntersectionMonitor::OnExitMonitor(
 }
 
 
-FString AIntersectionMonitor::GetEventsString()
+std::string AIntersectionMonitor::GetEventsString()
 {
 	FString EventsString;
 	for (auto& Pair : ActorToEventsMap)
 	{
 		EventsString += Pair.Value;
 	}
-	return EventsString;
+	return std::string(TCHAR_TO_ANSI(*EventsString));
 }
 
 
@@ -359,24 +383,21 @@ void AIntersectionMonitor::Solve()
 {
 	try {
 		Clingo::Logger logger = [](Clingo::WarningCode, char const *message) {
-			UE_LOG(LogTemp, Warning, TEXT("Clingo logger message: %s"), ANSI_TO_TCHAR(message));
+			//UE_LOG(LogTemp, Warning, TEXT("Clingo logger message: %s"), ANSI_TO_TCHAR(message));
 		};
 		
-		FString ProgramTitle = "#program time_" 
-			+ FString::FromInt(FMath::FloorToInt(GetWorld()->GetTimeSeconds() * 1000))
-			+ ".\n";
-		FString EventsString = GetEventsString();
-		AppendToLogfile(ProgramTitle + EventsString);
+		//std::string ProgramTitle = "#program time_" 
+		//	+ std::to_string(FMath::FloorToInt(GetWorld()->GetTimeSeconds() * 1000))
+		//	+ ".\n";
+		std::string EventsString = GetEventsString();
+		//AppendToLogfile(ProgramTitle + EventsString);
 
 		// Without the "-n 0" option, at most one model is found.
 		Clingo::Control ctl{ {}, logger, 20 };
 
-		char* Program = TCHAR_TO_ANSI(*(Geometry + EventsString));
-		ctl.add("base", {}, Program);
-
-		// Load everytime so that you can change the behaviour during runtime.
-		const char* RulesFileName = TCHAR_TO_UTF8(*(FPaths::ProjectDir() + "Plugins/TrafficMonitor/LogicSolver/all-way-stop_new.cl"));
-		ctl.load(RulesFileName);
+		ctl.add("base", {}, EventsString.c_str());
+		ctl.add("base", {}, Geometry.c_str());
+		ctl.add("base", {}, TrafficRules.c_str());
 
 		ctl.ground({ {"base", {}} });
 		auto solveHandle = ctl.solve();
